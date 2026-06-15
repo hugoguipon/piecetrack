@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PieceTrack — Industrial Traceability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1A1F2E;
+    --surface: #252B3B;
+    --border: #2D3748;
+    --accent: #F6C90E;
+    --accent-dim: rgba(246,201,14,0.12);
+    --text: #E2E8F0;
+    --text-muted: #718096;
+    --success: #38A169;
+    --success-dim: rgba(56,161,105,0.12);
+    --danger: #E53E3E;
+    --danger-dim: rgba(229,62,62,0.12);
+    --info: #4299E1;
+    --info-dim: rgba(66,153,225,0.12);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+  }
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .sync-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .sync-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
+  .sync-dot.error { background: var(--danger); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .record-badge {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .record-badge strong { color: var(--accent); font-size: 14px; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 14px 0;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Main ── */
+  main { flex: 1; padding: 24px; max-width: 640px; margin: 0 auto; width: 100%; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Step labels ── */
+  .step-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  /* ── Photo Zone ── */
+  .photo-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .photo-zone:hover, .photo-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .photo-zone input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .photo-icon { font-size: 36px; margin-bottom: 8px; }
+  .photo-zone p { color: var(--text-muted); font-size: 14px; }
+  .photo-zone strong { color: var(--text); }
+
+  .photo-preview {
+    display: none;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .photo-preview img { width: 100%; display: block; max-height: 280px; object-fit: cover; }
+  .photo-preview .change-btn {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.7);
+    color: var(--text);
+    border: none; border-radius: 4px;
+    padding: 4px 10px; font-size: 12px;
+    cursor: pointer; font-family: var(--sans);
+  }
+
+  /* ── GPS Card ── */
+  .gps-card {
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .gps-card.loading { background:var(--accent-dim); border:1px solid rgba(246,201,14,0.3); color:var(--accent); }
+  .gps-card.found { background:var(--success-dim); border:1px solid rgba(56,161,105,0.3); color:var(--success); }
+  .gps-card.manual { background:rgba(113,128,150,0.1); border:1px solid var(--border); color:var(--text-muted); }
+  .gps-card .gps-icon { font-size: 20px; flex-shrink: 0; }
+  .gps-coords { flex: 1; }
+  .gps-coords small { display:block; font-size:10px; opacity:0.7; margin-top:2px; }
+
+  /* ── Fields ── */
+  .field { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 6px;
+  }
+  input[type=text], input[type=password], textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--mono); font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type=text]:focus, input[type=password]:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Buttons ── */
+  .btn {
+    width: 100%; padding: 13px;
+    border: none; border-radius: 6px;
+    font-family: var(--sans); font-size: 14px;
+    font-weight: 700; letter-spacing: 0.04em;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #1A1F2E; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); margin-top: 10px; }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(229,62,62,0.3); }
+  .btn-success { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
+
+  /* ── Info/warning boxes ── */
+  .info-box {
+    border-radius: 8px; padding: 14px 16px;
+    font-size: 13px; line-height: 1.5; margin-bottom: 16px;
+  }
+  .info-box.info { background: var(--info-dim); border: 1px solid rgba(66,153,225,0.3); color: var(--info); }
+  .info-box.warning { background: var(--accent-dim); border: 1px solid rgba(246,201,14,0.3); color: var(--accent); }
+  .info-box.success { background: var(--success-dim); border: 1px solid rgba(56,161,105,0.3); color: var(--success); }
+  .info-box.danger { background: var(--danger-dim); border: 1px solid rgba(229,62,62,0.3); color: var(--danger); }
+  .info-box strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .info-box code {
+    background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;
+    font-family: var(--mono); font-size: 11px; word-break: break-all;
+  }
+
+  /* ── Settings panel ── */
+  .settings-section { margin-bottom: 28px; }
+  .settings-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+
+  .script-steps { counter-reset: step; }
+  .script-step {
+    display: flex; gap: 12px;
+    margin-bottom: 12px;
+    font-size: 13px; color: var(--text-muted); line-height: 1.5;
+  }
+  .script-step::before {
+    counter-increment: step;
+    content: counter(step);
+    width: 22px; height: 22px; flex-shrink: 0;
+    background: var(--accent); color: #1A1F2E;
+    border-radius: 50%; font-weight: 700; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .script-step a { color: var(--accent); }
+
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #8b9db5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 8px 0;
+    position: relative;
+    line-height: 1.6;
+  }
+  .code-block .kw { color: #f97583; }
+  .code-block .str { color: #9ecbff; }
+  .code-block .cm { color: #444d56; }
+  .copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    background: var(--border); color: var(--text-muted);
+    border: none; border-radius: 4px;
+    padding: 3px 8px; font-size: 11px; cursor: pointer;
+    font-family: var(--sans);
+  }
+  .copy-btn:hover { color: var(--accent); }
+
+  .sync-status-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; margin-bottom: 12px;
+  }
+  .sync-status-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .sync-status-row .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+  .sync-status-row .dot.off { background: var(--text-muted); }
+  .sync-status-row .dot.err { background: var(--danger); }
+  .sync-status-row span { font-size: 13px; color: var(--text-muted); }
+  .sync-status-row strong { color: var(--text); }
+
+  /* ── Search ── */
+  .search-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin-bottom: 20px;
+  }
+  .search-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .search-actions .btn { flex: 1; }
+
+  /* ── Results ── */
+  .results-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 12px;
+  }
+  .results-count { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+  .results-count strong { color: var(--accent); font-size: 16px; }
+
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  .result-card:hover { border-color: rgba(246,201,14,0.4); }
+  .result-img-wrap { position: relative; height: 180px; background: #0f1420; overflow: hidden; }
+  .result-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .result-img-wrap .no-img {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: var(--text-muted); font-size: 13px;
+  }
+  .result-meta { padding: 14px 16px; }
+  .result-ids { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tag {
+    font-family: var(--mono); font-size: 11px;
+    padding: 3px 8px; border-radius: 3px; font-weight: 600;
+  }
+  .tag-crane { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(246,201,14,0.3); }
+  .tag-pkg { background: rgba(100,149,237,0.12); color: #63b3ed; border: 1px solid rgba(99,179,237,0.3); }
+  .tag-synced { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
+  .tag-local { background: rgba(113,128,150,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+  .result-gps { font-family: var(--mono); font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .result-gps a { color: var(--success); text-decoration: none; font-size: 11px; }
+  .result-gps a:hover { text-decoration: underline; }
+  .result-date { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+
+  /* ── Export row ── */
+  .export-row { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-export {
+    flex: 1; min-width: 140px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans);
+    font-size: 12px; font-weight: 600; padding: 11px;
+    border-radius: 6px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+  .empty-state .big-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--success); color: #fff;
+    padding: 12px 24px; border-radius: 8px;
+    font-weight: 600; font-size: 14px;
+    transition: transform 0.3s ease;
+    z-index: 999; white-space: nowrap; max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.err { background: var(--danger); }
+
+  /* ── Pending badge ── */
+  .pending-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-dim); color: var(--accent);
+    border: 1px solid rgba(246,201,14,0.3);
+    border-radius: 4px; font-family: var(--mono);
+    font-size: 11px; padding: 2px 8px; margin-left: 6px;
+  }
+
+  @media (max-width: 480px) {
+    main { padding: 16px; }
+    .field-row { grid-template-columns: 1fr; }
+    .search-actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚙️</div>
+    PIECE<span>TRACK</span>
+  </div>
+  <div class="header-right">
+    <div class="sync-dot" id="header-sync-dot" title="Google Sheets sync status"></div>
+    <div class="record-badge">
+      <strong id="total-count">0</strong> parts
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('record')">📷 Record</div>
+  <div class="tab" onclick="switchTab('search')">🔍 Search</div>
+  <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+</div>
+
+<main>
+
+  <!-- ══════════════════════════════
+       RECORD PANEL
+  ══════════════════════════════ -->
+  <div class="panel active" id="panel-record">
+
+    <div class="step-label">Step 1 — Part Photo</div>
+
+    <div class="photo-zone" id="photo-zone">
+      <input type="file" accept="image/*" capture="environment" id="file-input" onchange="handlePhoto(event)">
+      <div class="photo-icon">📸</div>
+      <p><strong>Tap to take a photo</strong></p>
+      <p>or drag & drop an image here</p>
+    </div>
+
+    <div class="photo-preview" id="photo-preview">
+      <img id="preview-img" src="" alt="Part preview">
+      <button class="change-btn" onclick="resetPhoto()">Change</button>
+    </div>
+
+    <div class="gps-card manual" id="gps-card">
+      <span class="gps-icon">📍</span>
+      <div class="gps-coords">
+        <span id="gps-text">Waiting for a photo…</span>
+        <small id="gps-sub">GPS coordinates will be extracted automatically</small>
+      </div>
+    </div>
+
+    <div class="step-label">Step 2 — References</div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Crane ID</label>
+        <input type="text" id="input-crane" placeholder="CRN-001" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Package No.</label>
+        <input type="text" id="input-package" placeholder="PKG-042" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Comment (optional)</label>
+      <input type="text" id="input-comment" placeholder="Notes about this part…">
+    </div>
+
+    <button class="btn btn-primary" id="save-btn" onclick="savePart()" disabled>
+      ✔ Save Part
+    </button>
+
+    <div id="pending-notice" style="display:none; margin-top:10px;">
+      <div class="info-box warning">
+        <strong>⚠ Offline — pending sync</strong>
+        You have <span id="pending-count">0</span> part(s) saved locally, not yet synced to Google Sheets.
+        They will sync automatically when the connection is restored.
+      </div>
+      <button class="btn btn-ghost" onclick="syncPending()" style="margin-top:0">↑ Sync now</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SEARCH PANEL
+  ══════════════════════════════ -->
+  <div class="panel" id="panel-search">
+    <div class="step-label">Search filters</div>
+
+    <div class="search-box">
+      <div class="field-row">
+        <div class="field">
+          <label>Crane ID</label>
+          <input type="text" id="search-crane" placeholder="CRN-001" oninput="runSearch()">
+        </div>
+        <div class="field">
+          <label>Package No.</label>
+          <input type="text" id="search-package" placeholder="PKG-042" oninput="runSearch()">
+        </div>
+      </div>
+      <div class="search-actions">
+        <button class="btn btn-primary" onclick="runSearch()">🔍 Search</button>
+        <button class="btn btn-ghost" style="margin:0" onclick="pullFromSheets()">☁ Refresh from Sheets</button>
+      </div>
+    </div>
+
+    <div class="results-header">
+      <div class="step-label" style="margin:0; flex:1">Results</div>
+      <div class="results-count"><strong id="results-count">—</strong> result(s)</div>
+    </div>
+
+    <div id="results-container">
+      <div class="empty-state">
+        <div class="big-icon">🔎</div>
+        <p>Enter a Crane ID or Package number to find parts.</p>
+      </div>
+    </div>
+
+    <div class="export-row">
+      <button class="btn-export" onclick="exportExcel()">⬇ Export all (Excel)</button>
+      <button class="btn-export" onclick="exportFiltered()">⬇ Export selection</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       SETTINGS PANEL
+  ══════════════════════════════ -->
+  <div class="panel" id="panel-settings">
+
+    <div class="settings-section">
+      <div class="step-label">Google Sheets — Connection</div>
+
+      <div class="sync-status-row">
+        <div class="dot" id="settings-dot" style="background:var(--text-muted)"></div>
+        <div>
+          <strong id="settings-status-text">Not connected</strong>
+          <span id="settings-status-sub" style="display:block; font-size:12px">Configure a Web App URL below to enable sync.</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Google Apps Script Web App URL</label>
+        <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/…/exec"
+               oninput="saveSettings()">
+      </div>
+      <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="step-label">How to set up Google Sheets sync</div>
+
+      <div class="info-box info">
+        <strong>What this does</strong>
+        Every saved part is automatically appended as a new row in your Google Sheet, including the GPS coordinates and a link to Google Maps. Photos are stored locally (too large for Sheets).
+      </div>
+
+      <div class="script-steps">
+        <div class="script-step">
+          Go to <a href="https://sheets.google.com" target="_blank">sheets.google.com</a> and create a new spreadsheet. Copy its URL — you'll need it later.
+        </div>
+        <div class="script-step">
+          Open <strong>Extensions → Apps Script</strong> in your Google Sheet.
+        </div>
+        <div class="script-step">
+          Replace all existing code with the script below, then click <strong>Save</strong>.
+        </div>
+      </div>
+
+      <div class="code-block" id="apps-script-code"><button class="copy-btn" onclick="copyScript()">Copy</button><span class="cm">// PieceTrack — Google Apps Script
+// Paste this into your Google Apps Script editor</span>
+
+<span class="kw">const</span> SHEET_NAME = <span class="str">'Parts'</span>;
+<span class="kw">const</span> HEADERS = [
+  <span class="str">'ID'</span>, <span class="str">'Date'</span>, <span class="str">'Crane ID'</span>, <span class="str">'Package No.'</span>,
+  <span class="str">'Comment'</span>, <span class="str">'Latitude'</span>, <span class="str">'Longitude'</span>,
+  <span class="str">'GPS Source'</span>, <span class="str">'Maps Link'</span>, <span class="str">'Synced At'</span>
+];
+
+<span class="kw">function</span> doPost(e) {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> data = JSON.parse(e.postData.contents);
+    <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
+    <span class="kw">let</span> sheet = ss.getSheetByName(SHEET_NAME);
+    <span class="kw">if</span> (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(HEADERS);
+      sheet.getRange(1, 1, 1, HEADERS.length)
+           .setFontWeight(<span class="str">'bold'</span>)
+           .setBackground(<span class="str">'#F6C90E'</span>);
+      sheet.setFrozenRows(1);
+    }
+    <span class="kw">const</span> rows = Array.isArray(data) ? data : [data];
+    rows.forEach(p => {
+      sheet.appendRow([
+        p.id, p.date, p.crane, p.package,
+        p.comment || <span class="str">''</span>,
+        p.lat ?? <span class="str">''</span>, p.lng ?? <span class="str">''</span>,
+        p.gpsSource || <span class="str">''</span>,
+        p.lat ? <span class="str">`https://www.google.com/maps?q=${p.lat},${p.lng}`</span> : <span class="str">''</span>,
+        <span class="kw">new</span> Date().toISOString()
+      ]);
+    });
+    <span class="kw">return</span> ContentService
+      .createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>, count:rows.length}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } <span class="kw">catch</span>(err) {
+    <span class="kw">return</span> ContentService
+      .createTextOutput(JSON.stringify({status:<span class="str">'error'</span>, message:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+<span class="kw">function</span> doGet(e) {
+  <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
+  <span class="kw">const</span> sheet = ss.getSheetByName(SHEET_NAME);
+  <span class="kw">if</span> (!sheet) <span class="kw">return</span> json({rows:[]});
+  <span class="kw">const</span> [headers, ...rows] = sheet.getDataRange().getValues();
+  <span class="kw">const</span> parts = rows.map(r => Object.fromEntries(headers.map((h,i) => [h, r[i]])));
+  <span class="kw">const</span> crane = e.parameter.crane || <span class="str">''</span>;
+  <span class="kw">const</span> pkg   = e.parameter.package || <span class="str">''</span>;
+  <span class="kw">const</span> filtered = parts.filter(p =>
+    (!crane  || String(p[<span class="str">'Crane ID'</span>]).toLowerCase().includes(crane.toLowerCase())) &&
+    (!pkg    || String(p[<span class="str">'Package No.'</span>]).toLowerCase().includes(pkg.toLowerCase()))
+  );
+  <span class="kw">return</span> ContentService
+    .createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>, rows:filtered}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+</div>
+
+      <div class="script-steps" style="counter-reset: step 3">
+        <div class="script-step">
+          Click <strong>Deploy → New deployment</strong>. Set type to <strong>Web App</strong>. Set <em>Execute as</em> to <strong>Me</strong> and <em>Who has access</em> to <strong>Anyone</strong>. Click <strong>Deploy</strong> and authorise.
+        </div>
+        <div class="script-step">
+          Copy the <strong>Web App URL</strong> that appears (starts with <code>https://script.google.com/macros/s/…</code>) and paste it in the field above.
+        </div>
+        <div class="script-step">
+          Click <strong>Test connection</strong>. If successful, all future parts will sync automatically.
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="step-label">Local data</div>
+      <div class="info-box warning">
+        <strong>⚠ Pending sync</strong>
+        <span id="pending-info">All parts are synced.</span>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-success" style="flex:1" onclick="syncPending()">↑ Force sync</button>
+        <button class="btn btn-danger" style="flex:1" onclick="clearLocalData()">🗑 Clear local data</button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let DB = [];           // full local DB
+let pending = [];      // parts not yet synced
+let sheetsURL = '';
+let currentPhotoB64 = null;
+let currentGPS = null;
+let lastResults = [];
+let syncStatus = 'off'; // off | connected | syncing | error
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function init() {
+  const saved = localStorage.getItem('pt_db');
+  if (saved) { try { DB = JSON.parse(saved); } catch { DB = []; } }
+  const pend = localStorage.getItem('pt_pending');
+  if (pend) { try { pending = JSON.parse(pend); } catch { pending = []; } }
+  sheetsURL = localStorage.getItem('pt_sheets_url') || '';
+  if (sheetsURL) document.getElementById('sheets-url').value = sheetsURL;
+
+  updateCount();
+  updateSyncUI();
+  if (sheetsURL) setSyncStatus('connected');
+}
+
+function persist() {
+  localStorage.setItem('pt_db', JSON.stringify(DB));
+  updateCount();
+}
+
+function persistPending() {
+  localStorage.setItem('pt_pending', JSON.stringify(pending));
+  updatePendingUI();
+}
+
+function saveSettings() {
+  sheetsURL = document.getElementById('sheets-url').value.trim();
+  localStorage.setItem('pt_sheets_url', sheetsURL);
+  setSyncStatus(sheetsURL ? 'connected' : 'off');
+}
+
+function updateCount() {
+  document.getElementById('total-count').textContent = DB.length;
+}
+
+function updatePendingUI() {
+  const n = pending.length;
+  document.getElementById('pending-count').textContent = n;
+  document.getElementById('pending-notice').style.display = n > 0 ? 'block' : 'none';
+  document.getElementById('pending-info').textContent =
+    n > 0 ? `${n} part(s) saved locally, not yet synced to Google Sheets.` : 'All parts are synced.';
+}
+
+function setSyncStatus(status) {
+  syncStatus = status;
+  updateSyncUI();
+}
+
+function updateSyncUI() {
+  const dot = document.getElementById('header-sync-dot');
+  const sDot = document.getElementById('settings-dot');
+  const sText = document.getElementById('settings-status-text');
+  const sSub = document.getElementById('settings-status-sub');
+
+  dot.className = 'sync-dot';
+  const map = {
+    off:       { cls:'', text:'Not connected', sub:'Configure a Web App URL in Settings.', dotCls:'off' },
+    connected: { cls:'connected', text:'Google Sheets connected', sub:sheetsURL.slice(0,48)+'…', dotCls:'on' },
+    syncing:   { cls:'syncing', text:'Syncing…', sub:'Sending data to Google Sheets', dotCls:'on' },
+    error:     { cls:'error', text:'Sync error', sub:'Check your Web App URL in Settings.', dotCls:'err' },
+  };
+  const s = map[syncStatus] || map.off;
+  dot.classList.add(s.cls);
+  sDot.className = 'dot ' + s.dotCls;
+  sText.textContent = s.text;
+  sSub.textContent = sheetsURL ? s.sub : 'Configure a Web App URL below to enable sync.';
+}
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active',
+      (i===0 && tab==='record') ||
+      (i===1 && tab==='search') ||
+      (i===2 && tab==='settings')
+    );
+  });
+  ['record','search','settings'].forEach(p => {
+    document.getElementById('panel-'+p).classList.toggle('active', p === tab);
+  });
+  if (tab === 'search') runSearch();
+  if (tab === 'settings') updatePendingUI();
+}
+
+// ════════════════════════════════════════════
+// PHOTO & EXIF GPS
+// ════════════════════════════════════════════
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentPhotoB64 = ev.target.result;
+    document.getElementById('preview-img').src = currentPhotoB64;
+    document.getElementById('photo-zone').style.display = 'none';
+    document.getElementById('photo-preview').style.display = 'block';
+    extractGPS(ev.target.result);
+    checkSaveReady();
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetPhoto() {
+  currentPhotoB64 = null;
+  currentGPS = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('photo-zone').style.display = 'block';
+  document.getElementById('photo-preview').style.display = 'none';
+  setGPSCard('manual','📍','Waiting for a photo…','GPS coordinates will be extracted automatically');
+  checkSaveReady();
+}
+
+function setGPSCard(cls, icon, text, sub) {
+  const card = document.getElementById('gps-card');
+  card.className = 'gps-card ' + cls;
+  card.querySelector('.gps-icon').textContent = icon;
+  document.getElementById('gps-text').textContent = text;
+  document.getElementById('gps-sub').textContent = sub;
+}
+
+function extractGPS(dataURL) {
+  setGPSCard('loading','⏳','Analysing EXIF data…','Extracting GPS metadata from the photo');
+  const base64 = dataURL.split(',')[1];
+  const bin = atob(base64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  const gps = parseExifGPS(arr.buffer);
+
+  if (gps) {
+    currentGPS = gps;
+    setGPSCard('found','✅',`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`,'GPS coordinates extracted from photo EXIF');
+  } else {
+    setGPSCard('loading','📡','No EXIF GPS — trying device location…','Requesting GPS from this device');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          currentGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude, source: 'device' };
+          setGPSCard('found','✅',`${currentGPS.lat.toFixed(6)}, ${currentGPS.lng.toFixed(6)}`,'GPS from device (no EXIF in photo)');
+        },
+        () => {
+          currentGPS = null;
+          setGPSCard('manual','⚠️','GPS unavailable','Part will be saved without coordinates');
+        },
+        { timeout: 8000 }
+      );
+    } else {
+      currentGPS = null;
+      setGPSCard('manual','⚠️','GPS unavailable','Part will be saved without coordinates');
+    }
+  }
+}
+
+function parseExifGPS(buf) {
+  try {
+    const view = new DataView(buf);
+    if (view.getUint16(0) !== 0xFFD8) return null;
+    let offset = 2;
+    while (offset < buf.byteLength - 2) {
+      const marker = view.getUint16(offset);
+      offset += 2;
+      if (marker === 0xFFE1) {
+        const segLen = view.getUint16(offset);
+        const hdr = String.fromCharCode(...new Uint8Array(buf, offset + 2, 4));
+        if (hdr === 'Exif') return readGPSFromIFD(buf, offset + 8, segLen - 8);
+        offset += segLen;
+      } else if ((marker & 0xFF00) === 0xFF00) {
+        offset += view.getUint16(offset);
+      } else break;
+    }
+    return null;
+  } catch { return null; }
+}
+
+function readGPSFromIFD(buf, tiffOffset, len) {
+  try {
+    const view = new DataView(buf, tiffOffset, len);
+    const le = view.getUint16(0) === 0x4949;
+    const ifdOffset = view.getUint32(4, le);
+    const numEntries = view.getUint16(ifdOffset, le);
+    let gpsOff = null;
+    for (let i = 0; i < numEntries; i++) {
+      const e = ifdOffset + 2 + i * 12;
+      if (view.getUint16(e, le) === 0x8825) { gpsOff = view.getUint32(e + 8, le); break; }
+    }
+    if (gpsOff === null) return null;
+    const nGPS = view.getUint16(gpsOff, le);
+    let latRef, latArr, lngRef, lngArr;
+    for (let i = 0; i < nGPS; i++) {
+      const e = gpsOff + 2 + i * 12;
+      const tag = view.getUint16(e, le);
+      const cnt = view.getUint32(e + 4, le);
+      const vOff = view.getUint32(e + 8, le);
+      if (tag === 1) latRef = String.fromCharCode(new Uint8Array(buf, tiffOffset + e + 8, 1)[0]);
+      else if (tag === 2) latArr = readRationals(view, vOff, cnt, le);
+      else if (tag === 3) lngRef = String.fromCharCode(new Uint8Array(buf, tiffOffset + e + 8, 1)[0]);
+      else if (tag === 4) lngArr = readRationals(view, vOff, cnt, le);
+    }
+    if (!latArr || !lngArr) return null;
+    let lat = dms(latArr), lng = dms(lngArr);
+    if (latRef === 'S') lat = -lat;
+    if (lngRef === 'W') lng = -lng;
+    if (lat === 0 && lng === 0) return null;
+    return { lat, lng, source: 'exif' };
+  } catch { return null; }
+}
+
+function readRationals(view, offset, count, le) {
+  const r = [];
+  for (let i = 0; i < count; i++) {
+    const n = view.getUint32(offset + i * 8, le);
+    const d = view.getUint32(offset + i * 8 + 4, le);
+    r.push(d === 0 ? 0 : n / d);
+  }
+  return r;
+}
+function dms([d, m, s]) { return d + m / 60 + s / 3600; }
+
+// ════════════════════════════════════════════
+// SAVE PART
+// ════════════════════════════════════════════
+function checkSaveReady() {
+  document.getElementById('save-btn').disabled = !currentPhotoB64;
+}
+
+['input-crane','input-package','input-comment'].forEach(id =>
+  document.getElementById(id).addEventListener('input', checkSaveReady)
+);
+
+async function savePart() {
+  const crane   = document.getElementById('input-crane').value.trim();
+  const pkg     = document.getElementById('input-package').value.trim();
+  const comment = document.getElementById('input-comment').value.trim();
+
+  if (!crane || !pkg) {
+    showToast('⚠️ Please fill in Crane ID and Package No.', true);
+    return;
+  }
+
+  const part = {
+    id: Date.now(),
+    date: new Date().toISOString(),
+    crane, package: pkg, comment,
+    lat: currentGPS?.lat ?? null,
+    lng: currentGPS?.lng ?? null,
+    gpsSource: currentGPS?.source ?? null,
+    photo: currentPhotoB64,
+    synced: false,
+  };
+
+  DB.push(part);
+  persist();
+
+  // Try to sync immediately
+  if (sheetsURL) {
+    const ok = await pushToSheets([part]);
+    if (ok) {
+      DB[DB.findIndex(p => p.id === part.id)].synced = true;
+      persist();
+    } else {
+      pending.push(part);
+      persistPending();
+      showToast('💾 Saved locally — will sync when online', false);
+    }
+  } else {
+    pending.push(part);
+    persistPending();
+    showToast('💾 Saved locally (no Sheets URL configured)');
+  }
+
+  // Reset
+  resetPhoto();
+  document.getElementById('input-crane').value = '';
+  document.getElementById('input-package').value = '';
+  document.getElementById('input-comment').value = '';
+  currentGPS = null;
+
+  if (part.synced) showToast('✅ Part saved & synced to Google Sheets');
+}
+
+// ════════════════════════════════════════════
+// GOOGLE SHEETS SYNC
+// ════════════════════════════════════════════
+async function pushToSheets(parts) {
+  if (!sheetsURL) return false;
+  setSyncStatus('syncing');
+  try {
+    // Strip photo from payload (too large)
+    const payload = parts.map(p => {
+      const { photo, ...rest } = p;
+      return rest;
+    });
+    const res = await fetch(sheetsURL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain' }, // avoids CORS preflight
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      setSyncStatus('connected');
+      return true;
+    } else {
+      setSyncStatus('error');
+      return false;
+    }
+  } catch {
+    setSyncStatus('error');
+    return false;
+  }
+}
+
+async function syncPending() {
+  if (!pending.length) { showToast('Nothing to sync'); return; }
+  if (!sheetsURL) { showToast('⚠️ No Sheets URL configured — go to Settings', true); return; }
+  const ok = await pushToSheets(pending);
+  if (ok) {
+    // Mark all pending as synced in DB
+    const pids = new Set(pending.map(p => p.id));
+    DB.forEach(p => { if (pids.has(p.id)) p.synced = true; });
+    persist();
+    pending = [];
+    persistPending();
+    showToast(`✅ ${pids.size} part(s) synced to Google Sheets`);
+  } else {
+    showToast('❌ Sync failed — check your connection and URL', true);
+  }
+}
+
+async function testConnection() {
+  if (!sheetsURL) { showToast('⚠️ Enter a Web App URL first', true); return; }
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(sheetsURL + '?ping=1');
+    const data = await res.json();
+    setSyncStatus('connected');
+    showToast('✅ Connection successful!');
+  } catch {
+    setSyncStatus('error');
+    showToast('❌ Connection failed — check the URL', true);
+  }
+}
+
+async function pullFromSheets() {
+  if (!sheetsURL) { showToast('⚠️ No Sheets URL — configure in Settings', true); return; }
+  setSyncStatus('syncing');
+  const crane = document.getElementById('search-crane').value.trim();
+  const pkg   = document.getElementById('search-package').value.trim();
+  try {
+    const url = sheetsURL + `?crane=${encodeURIComponent(crane)}&package=${encodeURIComponent(pkg)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    setSyncStatus('connected');
+    if (data.status === 'ok') {
+      renderSheetResults(data.rows);
+      showToast(`☁ ${data.rows.length} result(s) from Google Sheets`);
+    }
+  } catch {
+    setSyncStatus('error');
+    showToast('❌ Could not reach Google Sheets', true);
+  }
+}
+
+function renderSheetResults(rows) {
+  if (!rows.length) {
+    document.getElementById('results-count').textContent = '0';
+    document.getElementById('results-container').innerHTML = `
+      <div class="empty-state"><div class="big-icon">📭</div><p>No parts found in Google Sheets.</p></div>`;
+    return;
+  }
+  document.getElementById('results-count').textContent = rows.length;
+  document.getElementById('results-container').innerHTML = rows.map(r => {
+    const lat = r['Latitude'];
+    const lng = r['Longitude'];
+    const mapsUrl = lat ? `https://www.google.com/maps?q=${lat},${lng}` : null;
+    return `
+    <div class="result-card">
+      <div class="result-img-wrap">
+        <div class="no-img">☁ Photo stored locally on device</div>
+      </div>
+      <div class="result-meta">
+        <div class="result-ids">
+          <span class="tag tag-crane">🏗 ${r['Crane ID']||'—'}</span>
+          <span class="tag tag-pkg">📦 ${r['Package No.']||'—'}</span>
+          <span class="tag tag-synced">☁ Sheets</span>
+        </div>
+        ${lat
+          ? `<div class="result-gps">📍 ${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}
+              &nbsp;<a href="${mapsUrl}" target="_blank">→ Open Maps</a></div>`
+          : `<div class="result-gps">⚠️ No GPS</div>`}
+        <div class="result-date">🕐 ${r['Date']||''}${r['Comment'] ? ' — '+r['Comment'] : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// LOCAL SEARCH
+// ════════════════════════════════════════════
+function runSearch() {
+  const crane = document.getElementById('search-crane').value.trim().toLowerCase();
+  const pkg   = document.getElementById('search-package').value.trim().toLowerCase();
+
+  if (!crane && !pkg) {
+    lastResults = [];
+    document.getElementById('results-count').textContent = '—';
+    document.getElementById('results-container').innerHTML = `
+      <div class="empty-state">
+        <div class="big-icon">🔎</div>
+        <p>Enter a Crane ID or Package number to search for parts.</p>
+      </div>`;
+    return;
+  }
+
+  lastResults = DB.filter(p => {
+    const mc = !crane || p.crane.toLowerCase().includes(crane);
+    const mp = !pkg   || p.package.toLowerCase().includes(pkg);
+    return mc && mp;
+  });
+
+  document.getElementById('results-count').textContent = lastResults.length;
+
+  if (!lastResults.length) {
+    document.getElementById('results-container').innerHTML = `
+      <div class="empty-state"><div class="big-icon">📭</div><p>No parts found locally. Try "Refresh from Sheets".</p></div>`;
+    return;
+  }
+
+  document.getElementById('results-container').innerHTML = lastResults.map(p => {
+    const mapsUrl = p.lat ? `https://www.google.com/maps?q=${p.lat},${p.lng}` : null;
+    return `
+    <div class="result-card">
+      <div class="result-img-wrap">
+        ${p.photo
+          ? `<img src="${p.photo}" alt="Part photo" loading="lazy">`
+          : `<div class="no-img">📷 No photo</div>`}
+      </div>
+      <div class="result-meta">
+        <div class="result-ids">
+          <span class="tag tag-crane">🏗 ${p.crane}</span>
+          <span class="tag tag-pkg">📦 ${p.package}</span>
+          <span class="tag ${p.synced ? 'tag-synced' : 'tag-local'}">${p.synced ? '☁ Synced' : '💾 Local'}</span>
+        </div>
+        ${p.lat
+          ? `<div class="result-gps">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)}
+              &nbsp;<a href="${mapsUrl}" target="_blank">→ Open Maps</a></div>`
+          : `<div class="result-gps">⚠️ GPS unavailable</div>`}
+        <div class="result-date">🕐 ${new Date(p.date).toLocaleString('en-GB')}${p.comment ? ' — '+p.comment : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════
+// EXPORT EXCEL
+// ════════════════════════════════════════════
+function exportExcel(data) {
+  const rows = (data || DB).map(p => ({
+    'ID': p.id,
+    'Date': new Date(p.date).toLocaleString('en-GB'),
+    'Crane ID': p.crane,
+    'Package No.': p.package,
+    'Comment': p.comment || '',
+    'Latitude': p.lat ?? '',
+    'Longitude': p.lng ?? '',
+    'GPS Source': p.gpsSource || '',
+    'Maps Link': p.lat ? `https://www.google.com/maps?q=${p.lat},${p.lng}` : '',
+    'Synced': p.synced ? 'Yes' : 'No',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:14},{wch:20},{wch:12},{wch:14},{wch:28},{wch:14},{wch:14},{wch:10},{wch:50},{wch:8}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Parts');
+  XLSX.writeFile(wb, `piece-track-${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(`⬇ Excel downloaded (${(data||DB).length} parts)`);
+}
+
+function exportFiltered() {
+  if (!lastResults.length) { showToast('⚠️ No results to export', true); return; }
+  exportExcel(lastResults);
+}
+
+// ════════════════════════════════════════════
+// LOCAL DATA
+// ════════════════════════════════════════════
+function clearLocalData() {
+  if (!confirm('Clear ALL local data? This cannot be undone.\n\nMake sure your data is synced to Google Sheets first.')) return;
+  DB = []; pending = [];
+  persist(); persistPending();
+  showToast('🗑 Local data cleared');
+}
+
+// ════════════════════════════════════════════
+// COPY SCRIPT
+// ════════════════════════════════════════════
+function copyScript() {
+  const raw = `// PieceTrack — Google Apps Script
+const SHEET_NAME = 'Parts';
+const HEADERS = ['ID','Date','Crane ID','Package No.','Comment','Latitude','Longitude','GPS Source','Maps Link','Synced At'];
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(HEADERS);
+      sheet.getRange(1,1,1,HEADERS.length).setFontWeight('bold').setBackground('#F6C90E');
+      sheet.setFrozenRows(1);
+    }
+    const rows = Array.isArray(data) ? data : [data];
+    rows.forEach(p => {
+      sheet.appendRow([
+        p.id, p.date, p.crane, p.package,
+        p.comment||'', p.lat??'', p.lng??'',
+        p.gpsSource||'',
+        p.lat ? \`https://www.google.com/maps?q=\${p.lat},\${p.lng}\` : '',
+        new Date().toISOString()
+      ]);
+    });
+    return ContentService.createTextOutput(JSON.stringify({status:'ok',count:rows.length})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'error',message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({status:'ok',rows:[]})).setMimeType(ContentService.MimeType.JSON);
+  const [headers,...rows] = sheet.getDataRange().getValues();
+  const parts = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
+  const crane = e.parameter.crane||'';
+  const pkg = e.parameter.package||'';
+  const filtered = parts.filter(p=>
+    (!crane||String(p['Crane ID']).toLowerCase().includes(crane.toLowerCase())) &&
+    (!pkg||String(p['Package No.']).toLowerCase().includes(pkg.toLowerCase()))
+  );
+  return ContentService.createTextOutput(JSON.stringify({status:'ok',rows:filtered})).setMimeType(ContentService.MimeType.JSON);
+}`;
+  navigator.clipboard.writeText(raw).then(() => showToast('📋 Script copied to clipboard'));
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' err' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ════════════════════════════════════════════
+// DRAG & DROP
+// ════════════════════════════════════════════
+const zone = document.getElementById('photo-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) processFile(f);
+});
+
+init();
+</script>
+</body>
+</html>
