@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="po">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -183,6 +185,29 @@
   .gps-card .gps-icon { font-size: 20px; flex-shrink: 0; }
   .gps-coords { flex: 1; }
   .gps-coords small { display:block; font-size:10px; opacity:0.7; margin-top:2px; }
+
+  .btn-gps {
+    width: 100%; padding: 12px 16px; margin-bottom: 4px;
+    border: 1px dashed rgba(66,153,225,0.5);
+    border-radius: 6px;
+    background: var(--info-dim);
+    color: var(--info);
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; gap: 8px;
+    transition: border-color 0.2s, background 0.2s, transform 0.1s;
+  }
+  .btn-gps:hover { border-color: var(--info); background: rgba(66,153,225,0.18); }
+  .btn-gps:active { transform: scale(0.98); }
+  .btn-gps.locating {
+    border-style: solid; border-color: var(--accent);
+    background: var(--accent-dim); color: var(--accent);
+    animation: pulse 1s infinite;
+  }
+  .btn-gps.located {
+    border-style: solid; border-color: var(--success);
+    background: var(--success-dim); color: var(--success);
+  }
 
   /* ── Fields ── */
   .field { margin-bottom: 16px; }
@@ -382,6 +407,76 @@
     font-size: 11px; padding: 2px 8px; margin-left: 6px;
   }
 
+  /* ── View toggle ── */
+  .view-toggle { display:flex; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+  .view-btn {
+    background: var(--surface); color: var(--text-muted);
+    border: none; padding: 5px 10px; cursor: pointer;
+    font-size: 14px; transition: background 0.15s, color 0.15s;
+  }
+  .view-btn.active { background: var(--accent); color: #1A1F2E; }
+  .view-btn:not(.active):hover { background: var(--border); color: var(--text); }
+
+  /* ── Map ── */
+  #results-map {
+    width: 100%; height: 380px;
+    border-radius: 8px; border: 1px solid var(--border);
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .map-legend {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .map-legend-item {
+    font-family: var(--mono); font-size: 11px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 3px 8px; cursor: pointer;
+    color: var(--text-muted); transition: border-color 0.15s;
+  }
+  .map-legend-item:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Leaflet popup custom style */
+  .lf-popup { font-family: var(--sans); font-size: 12px; min-width: 160px; }
+  .lf-popup strong { display:block; margin-bottom:4px; font-size:13px; }
+  .lf-popup .lf-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
+  .lf-popup .lf-tag { padding:2px 6px; border-radius:3px; font-size:10px; font-weight:700; font-family:var(--mono); }
+  .lf-popup .lf-maps { color:#2563eb; font-size:11px; }
+  .lf-popup .lf-date { color:#666; font-size:10px; margin-top:4px; }
+
+  /* ── Result card actions ── */
+  .result-actions {
+    display: flex; gap: 8px; margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-card {
+    flex: 1; padding: 8px;
+    border-radius: 5px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted);
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn-card:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-card.btn-card-map:hover { color: var(--info); border-color: var(--info); background: var(--info-dim); }
+  .btn-card.btn-card-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
+
+  /* ── Delete modal ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65); z-index: 500;
+    align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px 24px; width: 100%; max-width: 340px;
+    text-align: center;
+  }
+  .modal-icon { font-size: 40px; margin-bottom: 12px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .modal-body { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 10px; }
+
   @media (max-width: 480px) {
     main { padding: 16px; }
     .field-row { grid-template-columns: 1fr; }
@@ -439,7 +534,12 @@
       </div>
     </div>
 
-    <div class="step-label">Step 2 — References</div>
+    <button class="btn btn-gps" id="gps-btn" onclick="captureDeviceGPS()">
+      <span id="gps-btn-icon">📡</span>
+      <span id="gps-btn-label">Use my current location</span>
+    </button>
+
+    <div class="step-label" style="margin-top:20px">Step 2 — References</div>
 
     <div class="field-row">
       <div class="field">
@@ -496,7 +596,13 @@
 
     <div class="results-header">
       <div class="step-label" style="margin:0; flex:1">Results</div>
-      <div class="results-count"><strong id="results-count">—</strong> result(s)</div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="results-count"><strong id="results-count">—</strong> result(s)</div>
+        <div class="view-toggle">
+          <button class="view-btn active" id="btn-list-view" onclick="setView('list')" title="List view">☰</button>
+          <button class="view-btn" id="btn-map-view" onclick="setView('map')" title="Map view">🗺</button>
+        </div>
+      </div>
     </div>
 
     <div id="results-container">
@@ -506,9 +612,30 @@
       </div>
     </div>
 
+    <!-- MAP VIEW -->
+    <div id="map-container" style="display:none;">
+      <div id="results-map"></div>
+      <div id="map-legend" class="map-legend"></div>
+    </div>
+
     <div class="export-row">
       <button class="btn-export" onclick="exportExcel()">⬇ Export all (Excel)</button>
       <button class="btn-export" onclick="exportFiltered()">⬇ Export selection</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       DELETE CONFIRM MODAL
+  ══════════════════════════════ -->
+  <div class="modal-overlay" id="delete-modal" onclick="closeDeleteModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-icon">🗑</div>
+      <h3 class="modal-title">Delete this part?</h3>
+      <p class="modal-body" id="modal-part-info">This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" style="flex:1;margin:0" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Delete</button>
+      </div>
     </div>
   </div>
 
@@ -776,6 +903,10 @@ function resetPhoto() {
   document.getElementById('photo-zone').style.display = 'block';
   document.getElementById('photo-preview').style.display = 'none';
   setGPSCard('manual','📍','Waiting for a photo…','GPS coordinates will be extracted automatically');
+  const btn = document.getElementById('gps-btn');
+  btn.className = 'btn btn-gps';
+  document.getElementById('gps-btn-icon').textContent = '📡';
+  document.getElementById('gps-btn-label').textContent = 'Use my current location';
   checkSaveReady();
 }
 
@@ -817,6 +948,53 @@ function extractGPS(dataURL) {
       setGPSCard('manual','⚠️','GPS unavailable','Part will be saved without coordinates');
     }
   }
+}
+
+function captureDeviceGPS() {
+  const btn = document.getElementById('gps-btn');
+  const icon = document.getElementById('gps-btn-icon');
+  const label = document.getElementById('gps-btn-label');
+
+  if (!navigator.geolocation) {
+    showToast('⚠️ Geolocation not supported by this browser', true);
+    return;
+  }
+
+  // If already located, allow re-capture
+  btn.className = 'btn btn-gps locating';
+  icon.textContent = '⏳';
+  label.textContent = 'Acquiring GPS signal…';
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      currentGPS = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: Math.round(pos.coords.accuracy),
+        source: 'manual-device',
+      };
+      setGPSCard('found', '✅',
+        `${currentGPS.lat.toFixed(6)}, ${currentGPS.lng.toFixed(6)}`,
+        `📡 Device GPS — accuracy ±${currentGPS.accuracy}m`
+      );
+      btn.className = 'btn btn-gps located';
+      icon.textContent = '✅';
+      label.textContent = `${currentGPS.lat.toFixed(5)}, ${currentGPS.lng.toFixed(5)} — Tap to refresh`;
+      checkSaveReady();
+    },
+    err => {
+      btn.className = 'btn btn-gps';
+      icon.textContent = '📡';
+      label.textContent = 'Use my current location';
+      const msgs = {
+        1: 'Location access denied — check browser permissions',
+        2: 'GPS signal unavailable',
+        3: 'GPS request timed out',
+      };
+      showToast('⚠️ ' + (msgs[err.code] || 'GPS error'), true);
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
 }
 
 function parseExifGPS(buf) {
@@ -1062,6 +1240,108 @@ function renderSheetResults(rows) {
 }
 
 // ════════════════════════════════════════════
+// VIEW MODE (list / map)
+// ════════════════════════════════════════════
+let currentView = 'list';
+let leafletMap = null;
+let leafletMarkers = [];
+let pendingDeleteId = null;
+
+function setView(mode) {
+  currentView = mode;
+  document.getElementById('btn-list-view').classList.toggle('active', mode === 'list');
+  document.getElementById('btn-map-view').classList.toggle('active', mode === 'map');
+  document.getElementById('results-container').style.display = mode === 'list' ? 'block' : 'none';
+  document.getElementById('map-container').style.display = mode === 'map' ? 'block' : 'none';
+  if (mode === 'map') renderMap(lastResults);
+}
+
+function renderMap(parts) {
+  const withGPS = parts.filter(p => p.lat && p.lng);
+
+  if (!withGPS.length) {
+    document.getElementById('results-map').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:13px;">⚠️ No GPS coordinates available for these results</div>';
+    document.getElementById('map-legend').innerHTML = '';
+    return;
+  }
+
+  // Init map
+  if (!leafletMap) {
+    leafletMap = L.map('results-map');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(leafletMap);
+  } else {
+    leafletMarkers.forEach(m => leafletMap.removeLayer(m));
+    leafletMarkers = [];
+  }
+
+  const bounds = [];
+  withGPS.forEach((p, i) => {
+    const color = p.synced ? '#38A169' : '#F6C90E';
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:32px;height:32px;border-radius:50% 50% 50% 0;
+        background:${color};border:2px solid #1A1F2E;
+        transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 6px rgba(0,0,0,0.5);">
+        <span style="transform:rotate(45deg);font-size:13px;">⚙</span>
+      </div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -34],
+    });
+
+    const mapsUrl = `https://www.google.com/maps?q=${p.lat},${p.lng}`;
+    const dateStr = new Date(p.date).toLocaleString('en-GB');
+    const popup = `
+      <div class="lf-popup">
+        <strong>⚙ Part #${i + 1}</strong>
+        <div class="lf-tags">
+          <span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.crane}</span>
+          <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.package}</span>
+        </div>
+        <div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
+        ${p.comment ? `<div style="font-size:11px;margin-bottom:4px;">💬 ${p.comment}</div>` : ''}
+        <a href="${mapsUrl}" target="_blank" class="lf-maps">→ Open in Google Maps</a>
+        <div class="lf-date">🕐 ${dateStr}</div>
+      </div>`;
+
+    const marker = L.marker([p.lat, p.lng], { icon })
+      .addTo(leafletMap)
+      .bindPopup(popup);
+    leafletMarkers.push(marker);
+    bounds.push([p.lat, p.lng]);
+  });
+
+  if (bounds.length === 1) {
+    leafletMap.setView(bounds[0], 16);
+  } else {
+    leafletMap.fitBounds(bounds, { padding: [30, 30] });
+  }
+
+  // Legend
+  document.getElementById('map-legend').innerHTML =
+    withGPS.map((p, i) => `
+      <span class="map-legend-item" onclick="focusMarker(${i})">
+        #${i+1} 🏗${p.crane} / 📦${p.package}
+      </span>`).join('');
+
+  // Force redraw (needed when map was hidden)
+  setTimeout(() => leafletMap.invalidateSize(), 100);
+}
+
+function focusMarker(index) {
+  const p = lastResults.filter(p => p.lat && p.lng)[index];
+  if (!p || !leafletMap) return;
+  leafletMap.setView([p.lat, p.lng], 17);
+  leafletMarkers[index] && leafletMarkers[index].openPopup();
+}
+
+// ════════════════════════════════════════════
 // LOCAL SEARCH
 // ════════════════════════════════════════════
 function runSearch() {
@@ -1076,6 +1356,7 @@ function runSearch() {
         <div class="big-icon">🔎</div>
         <p>Enter a Crane ID or Package number to search for parts.</p>
       </div>`;
+    if (currentView === 'map') renderMap([]);
     return;
   }
 
@@ -1090,13 +1371,14 @@ function runSearch() {
   if (!lastResults.length) {
     document.getElementById('results-container').innerHTML = `
       <div class="empty-state"><div class="big-icon">📭</div><p>No parts found locally. Try "Refresh from Sheets".</p></div>`;
+    if (currentView === 'map') renderMap([]);
     return;
   }
 
-  document.getElementById('results-container').innerHTML = lastResults.map(p => {
+  document.getElementById('results-container').innerHTML = lastResults.map((p, i) => {
     const mapsUrl = p.lat ? `https://www.google.com/maps?q=${p.lat},${p.lng}` : null;
     return `
-    <div class="result-card">
+    <div class="result-card" id="card-${p.id}">
       <div class="result-img-wrap">
         ${p.photo
           ? `<img src="${p.photo}" alt="Part photo" loading="lazy">`
@@ -1113,10 +1395,53 @@ function runSearch() {
               &nbsp;<a href="${mapsUrl}" target="_blank">→ Open Maps</a></div>`
           : `<div class="result-gps">⚠️ GPS unavailable</div>`}
         <div class="result-date">🕐 ${new Date(p.date).toLocaleString('en-GB')}${p.comment ? ' — '+p.comment : ''}</div>
+        <div class="result-actions">
+          ${p.lat ? `<button class="btn-card btn-card-map" onclick="showOnMap(${i})">🗺 View on map</button>` : ''}
+          <button class="btn-card btn-card-del" onclick="askDelete(${p.id})">🗑 Delete</button>
+        </div>
       </div>
     </div>`;
   }).join('');
+
+  if (currentView === 'map') renderMap(lastResults);
 }
+
+function showOnMap(resultIndex) {
+  setView('map');
+  setTimeout(() => focusMarker(resultIndex), 200);
+}
+
+// ════════════════════════════════════════════
+// DELETE
+// ════════════════════════════════════════════
+function askDelete(id) {
+  const part = DB.find(p => p.id === id);
+  if (!part) return;
+  pendingDeleteId = id;
+  document.getElementById('modal-part-info').innerHTML =
+    `Crane <strong>${part.crane}</strong> — Package <strong>${part.package}</strong><br>
+     <span style="font-size:11px;color:var(--text-muted)">${new Date(part.date).toLocaleString('en-GB')}</span><br><br>
+     This will remove it from local storage.<br>
+     ${part.synced ? '<span style="color:var(--accent)">⚠ This part is synced — it will remain in Google Sheets.</span>' : ''}`;
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.remove('open');
+  pendingDeleteId = null;
+}
+
+function confirmDelete() {
+  if (pendingDeleteId === null) return;
+  DB = DB.filter(p => p.id !== pendingDeleteId);
+  pending = pending.filter(p => p.id !== pendingDeleteId);
+  persist();
+  persistPending();
+  closeDeleteModal();
+  showToast('🗑 Part deleted');
+  runSearch(); // refresh results
+}
+
 
 // ════════════════════════════════════════════
 // EXPORT EXCEL
