@@ -1085,7 +1085,7 @@ function checkSaveReady() {
 );
 
 async function savePart() {
-  const pc   = document.getElementById('input-piece').value.trim();
+  const piece   = document.getElementById('input-piece').value.trim();
   const pkg     = document.getElementById('input-package').value.trim();
   const comment = document.getElementById('input-comment').value.trim();
 
@@ -1097,7 +1097,8 @@ async function savePart() {
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece, package: pkg, comment,
+    piece: piece,comment,
+    package: pkg, comment,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
