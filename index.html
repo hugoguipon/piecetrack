@@ -658,10 +658,27 @@
       <div class="field">
         <label>Google Apps Script Web App URL</label>
         <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycbxwcS9C4H2ItYMxgFkpafBDRSD8Y4hkpNWfewYitYEYm7D_oCosd2ilni0mKWxlJ6FQbg/exec"
-               value="https://script.google.com/macros/s/AKfycbxwcS9C4H2ItYMxgFkpafBDRSD8Y4hkpNWfewYitYEYm7D_oCosd2ilni0mKWxlJ6FQbg/exec" oninput="saveSettings()">
+               oninput="saveSettings()">
       </div>
       <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
     </div>
+   
+   <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const urlInput = document.getElementById("sheets-url");
+    
+    if (urlInput) {
+      const targetUrl = urlInput.value.trim() !== "" ? urlInput.value.trim() : urlInput.placeholder.trim();
+
+      if (targetUrl !== "") {
+        document.getElementById("settings-status-text").innerText = "Connecting...";
+        document.getElementById("settings-status-sub").innerText = "Checking automatically...";
+        const originalValue = urlInput.value;
+        if (originalValue === "") urlInput.value = targetUrl; 
+        testConnection();
+        if (originalValue === "") urlInput.value = "";
+      }
+    }
 
     <div class="settings-section">
       <div class="step-label">How to set up Google Sheets sync</div>
