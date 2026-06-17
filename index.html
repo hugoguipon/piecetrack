@@ -686,59 +686,70 @@
       <div class="code-block" id="apps-script-code"><button class="copy-btn" onclick="copyScript()">Copy</button><span class="cm">// PieceTrack — Google Apps Script
 // Paste this into your Google Apps Script editor</span>
 
+<span class="com">// PieceTrack — Google Apps Script</span>
+<span class="com">// Paste this into your Google Apps Script editor</span>
+
 <span class="kw">const</span> SHEET_NAME = <span class="str">'Parts'</span>;
-<span class="kw">const</span> HEADERS = [
-  <span class="str">'ID'</span>, <span class="str">'Date'</span>, <span class="str">'Crane ID'</span>, <span class="str">'Package No.'</span>,
-  <span class="str">'Comment'</span>, <span class="str">'Latitude'</span>, <span class="str">'Longitude'</span>,
-  <span class="str">'GPS Source'</span>, <span class="str">'Maps Link'</span>, <span class="str">'Synced At'</span>
-];
+<span class="kw">const</span> HEADERS = [<span class="str">'ID'</span>, <span class="str">'Date'</span>, <span class="str">'Crane ID'</span>, <span class="str">'Package No.'</span>, <span class="str">'Comment'</span>, <span class="str">'Latitude'</span>, <span class="str">'Longitude'</span>, <span class="str">'GPS Source'</span>, <span class="str">'Maps Link'</span>, <span class="str">'Synced At'</span>];
 
 <span class="kw">function</span> doPost(e) {
   <span class="kw">try</span> {
     <span class="kw">const</span> data = JSON.parse(e.postData.contents);
     <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
     <span class="kw">let</span> sheet = ss.getSheetByName(SHEET_NAME);
+    
     <span class="kw">if</span> (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
       sheet.appendRow(HEADERS);
-      sheet.getRange(1, 1, 1, HEADERS.length)
-           .setFontWeight(<span class="str">'bold'</span>)
-           .setBackground(<span class="str">'#F6C90E'</span>);
+      sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight(<span class="str">'bold'</span>).setBackground(<span class="str">'#F6C90E'</span>);
       sheet.setFrozenRows(1);
     }
+    
     <span class="kw">const</span> rows = Array.isArray(data) ? data : [data];
     rows.forEach(p => {
       sheet.appendRow([
         p.id, p.date, p.crane, p.package,
-        p.comment || <span class="str">''</span>,
-        p.lat ?? <span class="str">''</span>, p.lng ?? <span class="str">''</span>,
+        p.comment || <span class="str">''</span>, 
+        p.lat ?? <span class="str">''</span>, 
+        p.lng ?? <span class="str">''</span>,
         p.gpsSource || <span class="str">''</span>,
-        p.lat ? <span class="str">`https://www.google.com/maps?q=${p.lat},${p.lng}`</span> : <span class="str">''</span>,
+        p.lat ? <span class="str">`http://maps.google.com/maps?q=${p.lat},${p.lng}`</span> : <span class="str">''</span>,
         <span class="kw">new</span> Date().toISOString()
       ]);
     });
+    
     <span class="kw">return</span> ContentService
-      .createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>, count:rows.length}))
-      .setMimeType(ContentService.MimeType.JSON);
+        .createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>, count:rows.length}))
+        .setMimeType(ContentService.MimeType.JSON);
+        
   } <span class="kw">catch</span>(err) {
     <span class="kw">return</span> ContentService
-      .createTextOutput(JSON.stringify({status:<span class="str">'error'</span>, message:err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
+        .createTextOutput(JSON.stringify({status:<span class="str">'error'</span>, message:err.toString()}))
+        .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 <span class="kw">function</span> doGet(e) {
   <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
   <span class="kw">const</span> sheet = ss.getSheetByName(SHEET_NAME);
-  <span class="kw">if</span> (!sheet) <span class="kw">return</span> json({rows:[]});
-  <span class="kw">const</span> [headers, ...rows] = sheet.getDataRange().getValues();
-  <span class="kw">const</span> parts = rows.map(r => Object.fromEntries(headers.map((h,i) => [h, r[i]])));
+  
+  <span class="kw">if</span> (!sheet) {
+      <span class="kw">return</span> ContentService
+        .createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>, rows:[]}))
+        .setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  <span class="kw">const</span> [headers,...rows] = sheet.getDataRange().getValues();
+  <span class="kw">const</span> parts = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
+  
   <span class="kw">const</span> crane = e.parameter.crane || <span class="str">''</span>;
-  <span class="kw">const</span> pkg   = e.parameter.package || <span class="str">''</span>;
+  <span class="kw">const</span> pkg = e.parameter.package || <span class="str">''</span>;
+  
   <span class="kw">const</span> filtered = parts.filter(p =>
-    (!crane  || String(p[<span class="str">'Crane ID'</span>]).toLowerCase().includes(crane.toLowerCase())) &&
-    (!pkg    || String(p[<span class="str">'Package No.'</span>]).toLowerCase().includes(pkg.toLowerCase()))
+    (!crane || String(p[<span class="str">'Crane ID'</span>]).toLowerCase().includes(crane.toLowerCase())) &&
+    (!pkg || String(p[<span class="str">'Package No.'</span>]).toLowerCase().includes(pkg.toLowerCase()))
   );
+  
   <span class="kw">return</span> ContentService
     .createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>, rows:filtered}))
     .setMimeType(ContentService.MimeType.JSON);
