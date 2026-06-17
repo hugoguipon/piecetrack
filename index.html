@@ -1144,9 +1144,7 @@ async function pushToSheets(parts) {
   setSyncStatus('syncing');
   try {
     // Strip photo from payload (too large)
-    const payload = parts.map(p => {
-      const { photo, ...rest } = p;
-      return rest;
+      const payload = parts;
     });
     const res = await fetch(sheetsURL, {
       method: 'POST',
