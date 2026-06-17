@@ -1097,7 +1097,7 @@ async function savePart() {
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece, package: pkg, comment,
+    piece , package: pkg, comment,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
