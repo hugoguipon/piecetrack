@@ -657,7 +657,7 @@
 
       <div class="field">
         <label>Google Apps Script Web App URL</label>
-        <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbxwcS9C4H2ItYMxgFkpafBDRSD8Y4hkpNWfewYitYEYm7D_oCosd2ilni0mKWxlJ6FQbg/exec"
+        <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbygfOekR84Z8Vfku7ZVGvY0lMz8kbfiFvrT6S9pnbzLj39pSSP7OabRtuoHu34vMmYk8g/exec"
                oninput="saveSettings()">
       </div>
       <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
@@ -1144,7 +1144,9 @@ async function pushToSheets(parts) {
   setSyncStatus('syncing');
   try {
     // Strip photo from payload (too large)
-      const payload = parts;
+      const payload = parts.map(p => {
+      const { photo, ...rest } = p;
+      return rest;
     });
     const res = await fetch(sheetsURL, {
       method: 'POST',
