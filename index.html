@@ -643,32 +643,25 @@
        SETTINGS PANEL
   ══════════════════════════════ -->
   <div class="panel" id="panel-settings">
+
     <div class="settings-section">
-     <div class="step-label">Google Sheets — Connection</div>
+      <div class="step-label">Google Sheets — Connection</div>
+
       <div class="sync-status-row">
         <div class="dot" id="settings-dot" style="background:var(--text-muted)"></div>
         <div>
           <strong id="settings-status-text">Not connected</strong>
           <span id="settings-status-sub" style="display:block; font-size:12px">Configure a Web App URL below to enable sync.</span>
-         
         </div>
-
       </div>
+
       <div class="field">
-       <label>Google Apps Script Web App URL</label>
-       <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycbxwcS9C4H2ItYMxgFkpafBDRSD8Y4hkpNWfewYitYEYm7D_oCosd2ilni0mKWxlJ6FQbg/exec"
+        <label>Google Apps Script Web App URL</label>
+        <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycbxwcS9C4H2ItYMxgFkpafBDRSD8Y4hkpNWfewYitYEYm7D_oCosd2ilni0mKWxlJ6FQbg/exec"
                oninput="saveSettings()">
       </div>
-
       <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
-
     </div>
-
-
-
-    <div class="settings-section">
-
-      <div class="step-label">How to set up Google Sheets sync</div>
 
     <div class="settings-section">
       <div class="step-label">How to set up Google Sheets sync</div>
