@@ -359,7 +359,7 @@
     font-family: var(--mono); font-size: 11px;
     padding: 3px 8px; border-radius: 3px; font-weight: 600;
   }
-  .tag-crane { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(246,201,14,0.3); }
+  .tag-piece { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(246,201,14,0.3); }
   .tag-pkg { background: rgba(100,149,237,0.12); color: #63b3ed; border: 1px solid rgba(99,179,237,0.3); }
   .tag-synced { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
   .tag-local { background: rgba(113,128,150,0.1); color: var(--text-muted); border: 1px solid var(--border); }
@@ -543,8 +543,8 @@
 
     <div class="field-row">
       <div class="field">
-        <label>Crane ID</label>
-        <input type="text" id="input-crane" placeholder="CRN-001" autocomplete="off">
+        <label>Piece ID</label>
+        <input type="text" id="input-piece" placeholder="PC-001" autocomplete="off">
       </div>
       <div class="field">
         <label>Package No.</label>
@@ -580,8 +580,8 @@
     <div class="search-box">
       <div class="field-row">
         <div class="field">
-          <label>Crane ID</label>
-          <input type="text" id="search-crane" placeholder="CRN-001" oninput="runSearch()">
+          <label>Piece ID</label>
+          <input type="text" id="search-piece" placeholder="PC-001" oninput="runSearch()">
         </div>
         <div class="field">
           <label>Package No.</label>
@@ -608,7 +608,7 @@
     <div id="results-container">
       <div class="empty-state">
         <div class="big-icon">🔎</div>
-        <p>Enter a Crane ID or Package number to find parts.</p>
+        <p>Enter a Piece ID or Package number to find parts.</p>
       </div>
     </div>
 
@@ -690,7 +690,7 @@
 <span class="com">// Paste this into your Google Apps Script editor</span>
 
 <span class="kw">const</span> SHEET_NAME = <span class="str">'Parts'</span>;
-<span class="kw">const</span> HEADERS = [<span class="str">'ID'</span>, <span class="str">'Date'</span>, <span class="str">'Crane ID'</span>, <span class="str">'Package No.'</span>, <span class="str">'Comment'</span>, <span class="str">'Latitude'</span>, <span class="str">'Longitude'</span>, <span class="str">'GPS Source'</span>, <span class="str">'Maps Link'</span>, <span class="str">'Synced At'</span>];
+<span class="kw">const</span> HEADERS = [<span class="str">'ID'</span>, <span class="str">'Date'</span>, <span class="str">'Piece ID'</span>, <span class="str">'Package No.'</span>, <span class="str">'Comment'</span>, <span class="str">'Latitude'</span>, <span class="str">'Longitude'</span>, <span class="str">'GPS Source'</span>, <span class="str">'Maps Link'</span>, <span class="str">'Synced At'</span>];
 
 <span class="kw">function</span> doPost(e) {
   <span class="kw">try</span> {
@@ -708,7 +708,7 @@
     <span class="kw">const</span> rows = Array.isArray(data) ? data : [data];
     rows.forEach(p => {
       sheet.appendRow([
-        p.id, p.date, p.crane, p.package,
+        p.id, p.date, p.piece, p.package,
         p.comment || <span class="str">''</span>, 
         p.lat ?? <span class="str">''</span>, 
         p.lng ?? <span class="str">''</span>,
@@ -742,11 +742,11 @@
   <span class="kw">const</span> [headers,...rows] = sheet.getDataRange().getValues();
   <span class="kw">const</span> parts = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
   
-  <span class="kw">const</span> crane = e.parameter.crane || <span class="str">''</span>;
+  <span class="kw">const</span> piece = e.parameter.piece || <span class="str">''</span>;
   <span class="kw">const</span> pkg = e.parameter.package || <span class="str">''</span>;
   
   <span class="kw">const</span> filtered = parts.filter(p =>
-    (!crane || String(p[<span class="str">'Crane ID'</span>]).toLowerCase().includes(crane.toLowerCase())) &&
+    (!piece || String(p[<span class="str">'Piece ID'</span>]).toLowerCase().includes(piece.toLowerCase())) &&
     (!pkg || String(p[<span class="str">'Package No.'</span>]).toLowerCase().includes(pkg.toLowerCase()))
   );
   
@@ -1080,24 +1080,24 @@ function checkSaveReady() {
   document.getElementById('save-btn').disabled = !currentPhotoB64;
 }
 
-['input-crane','input-package','input-comment'].forEach(id =>
+['input-piece','input-package','input-comment'].forEach(id =>
   document.getElementById(id).addEventListener('input', checkSaveReady)
 );
 
 async function savePart() {
-  const crane   = document.getElementById('input-crane').value.trim();
+  const piece   = document.getElementById('input-piece').value.trim();
   const pkg     = document.getElementById('input-package').value.trim();
   const comment = document.getElementById('input-comment').value.trim();
 
-  if (!crane || !pkg) {
-    showToast('⚠️ Please fill in Crane ID and Package No.', true);
+  if (!piece || !pkg) {
+    showToast('⚠️ Please fill in Piece ID and Package No.', true);
     return;
   }
 
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    crane, package: pkg, comment,
+    piece, package: pkg, comment,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
@@ -1127,7 +1127,7 @@ async function savePart() {
 
   // Reset
   resetPhoto();
-  document.getElementById('input-crane').value = '';
+  document.getElementById('input-piece').value = '';
   document.getElementById('input-package').value = '';
   document.getElementById('input-comment').value = '';
   currentGPS = null;
@@ -1200,10 +1200,10 @@ async function testConnection() {
 async function pullFromSheets() {
   if (!sheetsURL) { showToast('⚠️ No Sheets URL — configure in Settings', true); return; }
   setSyncStatus('syncing');
-  const crane = document.getElementById('search-crane').value.trim();
+  const piece = document.getElementById('search-piece').value.trim();
   const pkg   = document.getElementById('search-package').value.trim();
   try {
-    const url = sheetsURL + `?crane=${encodeURIComponent(crane)}&package=${encodeURIComponent(pkg)}`;
+    const url = sheetsURL + `?piece=${encodeURIComponent(piece)}&package=${encodeURIComponent(pkg)}`;
     const res = await fetch(url);
     const data = await res.json();
     setSyncStatus('connected');
@@ -1236,7 +1236,7 @@ function renderSheetResults(rows) {
       </div>
       <div class="result-meta">
         <div class="result-ids">
-          <span class="tag tag-crane">🏗 ${r['Crane ID']||'—'}</span>
+          <span class="tag tag-piece">🏗 ${r['Piece ID']||'—'}</span>
           <span class="tag tag-pkg">📦 ${r['Package No.']||'—'}</span>
           <span class="tag tag-synced">☁ Sheets</span>
         </div>
@@ -1312,7 +1312,7 @@ function renderMap(parts) {
       <div class="lf-popup">
         <strong>⚙ Part #${i + 1}</strong>
         <div class="lf-tags">
-          <span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.crane}</span>
+          <span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.piece}</span>
           <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.package}</span>
         </div>
         <div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
@@ -1338,7 +1338,7 @@ function renderMap(parts) {
   document.getElementById('map-legend').innerHTML =
     withGPS.map((p, i) => `
       <span class="map-legend-item" onclick="focusMarker(${i})">
-        #${i+1} 🏗${p.crane} / 📦${p.package}
+        #${i+1} 🏗${p.piece} / 📦${p.package}
       </span>`).join('');
 
   // Force redraw (needed when map was hidden)
@@ -1356,23 +1356,23 @@ function focusMarker(index) {
 // LOCAL SEARCH
 // ════════════════════════════════════════════
 function runSearch() {
-  const crane = document.getElementById('search-crane').value.trim().toLowerCase();
+  const piece = document.getElementById('search-piece').value.trim().toLowerCase();
   const pkg   = document.getElementById('search-package').value.trim().toLowerCase();
 
-  if (!crane && !pkg) {
+  if (!piece && !pkg) {
     lastResults = [];
     document.getElementById('results-count').textContent = '—';
     document.getElementById('results-container').innerHTML = `
       <div class="empty-state">
         <div class="big-icon">🔎</div>
-        <p>Enter a Crane ID or Package number to search for parts.</p>
+        <p>Enter a Piece ID or Package number to search for parts.</p>
       </div>`;
     if (currentView === 'map') renderMap([]);
     return;
   }
 
   lastResults = DB.filter(p => {
-    const mc = !crane || p.crane.toLowerCase().includes(crane);
+    const mc = !piece || p.piece.toLowerCase().includes(piece);
     const mp = !pkg   || p.package.toLowerCase().includes(pkg);
     return mc && mp;
   });
@@ -1397,7 +1397,7 @@ function runSearch() {
       </div>
       <div class="result-meta">
         <div class="result-ids">
-          <span class="tag tag-crane">🏗 ${p.crane}</span>
+          <span class="tag tag-piece">🏗 ${p.piece}</span>
           <span class="tag tag-pkg">📦 ${p.package}</span>
           <span class="tag ${p.synced ? 'tag-synced' : 'tag-local'}">${p.synced ? '☁ Synced' : '💾 Local'}</span>
         </div>
@@ -1430,7 +1430,7 @@ function askDelete(id) {
   if (!part) return;
   pendingDeleteId = id;
   document.getElementById('modal-part-info').innerHTML =
-    `Crane <strong>${part.crane}</strong> — Package <strong>${part.package}</strong><br>
+    `Piece <strong>${part.piece}</strong> — Package <strong>${part.package}</strong><br>
      <span style="font-size:11px;color:var(--text-muted)">${new Date(part.date).toLocaleString('en-GB')}</span><br><br>
      This will remove it from local storage.<br>
      ${part.synced ? '<span style="color:var(--accent)">⚠ This part is synced — it will remain in Google Sheets.</span>' : ''}`;
@@ -1461,7 +1461,7 @@ function exportExcel(data) {
   const rows = (data || DB).map(p => ({
     'ID': p.id,
     'Date': new Date(p.date).toLocaleString('en-GB'),
-    'Crane ID': p.crane,
+    'Piece ID': p.piece,
     'Package No.': p.package,
     'Comment': p.comment || '',
     'Latitude': p.lat ?? '',
@@ -1500,7 +1500,7 @@ function clearLocalData() {
 function copyScript() {
   const raw = `// PieceTrack — Google Apps Script
 const SHEET_NAME = 'Parts';
-const HEADERS = ['ID','Date','Crane ID','Package No.','Comment','Latitude','Longitude','GPS Source','Maps Link','Synced At'];
+const HEADERS = ['ID','Date','Piece ID','Package No.','Comment','Latitude','Longitude','GPS Source','Maps Link','Synced At'];
 
 function doPost(e) {
   try {
@@ -1516,7 +1516,7 @@ function doPost(e) {
     const rows = Array.isArray(data) ? data : [data];
     rows.forEach(p => {
       sheet.appendRow([
-        p.id, p.date, p.crane, p.package,
+        p.id, p.date, p.piece, p.package,
         p.comment||'', p.lat??'', p.lng??'',
         p.gpsSource||'',
         p.lat ? \`https://www.google.com/maps?q=\${p.lat},\${p.lng}\` : '',
@@ -1535,10 +1535,10 @@ function doGet(e) {
   if (!sheet) return ContentService.createTextOutput(JSON.stringify({status:'ok',rows:[]})).setMimeType(ContentService.MimeType.JSON);
   const [headers,...rows] = sheet.getDataRange().getValues();
   const parts = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
-  const crane = e.parameter.crane||'';
+  const piece = e.parameter.piece||'';
   const pkg = e.parameter.package||'';
   const filtered = parts.filter(p=>
-    (!crane||String(p['Crane ID']).toLowerCase().includes(crane.toLowerCase())) &&
+    (!piece||String(p['Piece ID']).toLowerCase().includes(piece.toLowerCase())) &&
     (!pkg||String(p['Package No.']).toLowerCase().includes(pkg.toLowerCase()))
   );
   return ContentService.createTextOutput(JSON.stringify({status:'ok',rows:filtered})).setMimeType(ContentService.MimeType.JSON);
