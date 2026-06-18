@@ -1059,16 +1059,29 @@ function checkSaveReady() {
 );
 
 async function savePart() {
-  const piece   = document.getElementById('input-piece').value.trim();
-  const pkg     = document.getElementById('input-package').value.trim();
-  const comment = document.getElementById('input-comment').value.trim();
+  // 1. FIX MOBILE : Forcer la fermeture du clavier pour s'assurer que la valeur est validée
+  if (document.activeElement) {
+    document.activeElement.blur();
+  }
 
-  if (!piece || !pkg) { showToast('⚠️ Please fill in Piece ID and Package No.', true); return; }
+  // 2. Récupération explicite des valeurs
+  const pieceVal   = document.getElementById('input-piece').value.trim();
+  const pkgVal     = document.getElementById('input-package').value.trim();
+  const commentVal = document.getElementById('input-comment').value.trim();
 
+  // 3. Vérification de sécurité
+  if (!pieceVal || !pkgVal) { 
+    showToast('⚠️ Please fill in Piece ID and Package No.', true); 
+    return; 
+  }
+
+  // 4. FIX MOBILE : Utilisation d'une syntaxe d'objet 100% explicite
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece, package: pkg, comment,
+    piece: pieceVal,       // Assigne explicitement la variable
+    package: pkgVal,       // Assigne explicitement la variable
+    comment: commentVal,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
@@ -1114,7 +1127,6 @@ async function savePart() {
 
   if (part.synced) showToast('✅ Part saved, photo on Drive & synced to Sheets');
 }
-
 // ════════════════════════════════════════════
 // UPLOAD OVERLAY
 // ════════════════════════════════════════════
