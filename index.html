@@ -896,17 +896,54 @@ function handlePhoto(e) {
 
 function processFile(file) {
   const reader = new FileReader();
+  
   reader.onload = ev => {
-    currentPhotoB64 = ev.target.result;
-    document.getElementById('preview-img').src = currentPhotoB64;
-    document.getElementById('photo-zone').style.display = 'none';
-    document.getElementById('photo-preview').style.display = 'block';
-    extractGPS(ev.target.result);
-    checkSaveReady();
-  };
-  reader.readAsDataURL(file);
-}
+    const originalDataURL = ev.target.result;
 
+    // 1. Extraire le GPS de l'image originale en premier
+    // C'est crucial car le redimensionnement via Canvas supprime les données EXIF !
+    extractGPS(originalDataURL);
+
+    // 2. Créer un objet Image pour le redimensionnement
+    const img = new Image();
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 800; // Largeur max en pixels (suffisant pour une preuve visuelle)
+      let scaleSize = 1;
+
+      // Calculer le nouveau ratio seulement si l'image est plus grande que MAX_WIDTH
+      if (img.width > MAX_WIDTH) {
+        scaleSize = MAX_WIDTH / img.width;
+      }
+
+      canvas.width = MAX_WIDTH < img.width ? MAX_WIDTH : img.width;
+      canvas.height = img.height * scaleSize;
+      
+      // Dessiner l'image redimensionnée sur le canvas
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // 3. Convertir le canvas en JPEG compressé (0.7 = 70% de qualité)
+      currentPhotoB64 = canvas.toDataURL('image/jpeg', 0.7);
+
+      // 4. Mettre à jour l'interface utilisateur
+      document.getElementById('preview-img').src = currentPhotoB64;
+      document.getElementById('photo-zone').style.display = 'none';
+      document.getElementById('photo-preview').style.display = 'block';
+      
+      // Activer le bouton de sauvegarde
+      checkSaveReady();
+    };
+    
+    // Déclencher le chargement de l'image
+    img.src = originalDataURL;
+  };
+  
+  // Lire le fichier sélectionné
+  reader.readAsDataURL(file);
+};
+ 
 function resetPhoto() {
   currentPhotoB64 = null;
   currentGPS = null;
@@ -1097,8 +1134,7 @@ async function savePart() {
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece: piece,comment,
-    package: pkg, comment,
+    piece, package: pkg, comment,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
@@ -1143,8 +1179,7 @@ async function pushToSheets(parts) {
   if (!sheetsURL) return false;
   setSyncStatus('syncing');
   try {
-    // Strip photo from payload (too large)
-      const payload = parts.map(p => {
+    const payload = parts.map(p => {
       const { photo, ...rest } = p;
       return rest;
     });
