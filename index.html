@@ -1068,7 +1068,7 @@ async function savePart() {
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece, package: pkg, comment,
+    piece, pkg, comment,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
@@ -1146,7 +1146,7 @@ async function pushToSheets(parts) {
       // Extract base64 data portion (strip data:image/jpeg;base64, prefix)
       const b64 = p.photo ? p.photo.split(',')[1] : null;
       return {
-        id: p.id, date: p.date, piece: p.piece, package: p.package,
+        id: p.id, date: p.date, piece: p.piece, pkg: p.pkg,
         comment: p.comment, lat: p.lat, lng: p.lng, gpsSource: p.gpsSource,
         photoB64: b64,
       };
@@ -1320,7 +1320,7 @@ function renderMap(parts) {
         <strong>⚙ Part #${i+1}</strong>
         <div class="lf-tags">
           <span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.piece}</span>
-          <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.package}</span>
+          <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.pkg}</span>
         </div>
         <div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
         ${p.comment ? `<div style="font-size:11px;margin-bottom:4px;">💬 ${p.comment}</div>` : ''}
@@ -1335,7 +1335,7 @@ function renderMap(parts) {
   if (bounds.length === 1) leafletMap.setView(bounds[0], 16);
   else leafletMap.fitBounds(bounds, { padding:[30,30] });
   document.getElementById('map-legend').innerHTML =
-    withGPS.map((p,i) => `<span class="map-legend-item" onclick="focusMarker(${i})">#${i+1} 🏗${p.piece} / 📦${p.package}</span>`).join('');
+    withGPS.map((p,i) => `<span class="map-legend-item" onclick="focusMarker(${i})">#${i+1} 🏗${p.piece} / 📦${p.pkg}</span>`).join('');
   setTimeout(() => leafletMap.invalidateSize(), 100);
 }
 
@@ -1369,7 +1369,7 @@ function runSearch() {
 
   lastResults = DB.filter(p => {
     const mc = !piece || p.piece.toLowerCase().includes(piece);
-    const mp = !pkg   || p.package.toLowerCase().includes(pkg);
+    const mp = !pkg   || p.pkg.toLowerCase().includes(pkg);
     return mc && mp;
   });
 
@@ -1394,7 +1394,7 @@ function runSearch() {
       <div class="result-meta">
         <div class="result-ids">
           <span class="tag tag-piece">🏗 ${p.piece}</span>
-          <span class="tag tag-pkg">📦 ${p.package}</span>
+          <span class="tag tag-pkg">📦 ${p.pkg}</span>
           <span class="tag ${p.synced ? 'tag-synced' : 'tag-local'}">${p.synced ? '☁ Synced' : '💾 Local'}</span>
           ${p.photoUrl ? `<span class="tag tag-drive">📁 Drive</span>` : ''}
         </div>
@@ -1422,7 +1422,7 @@ function askDelete(id) {
   if (!part) return;
   pendingDeleteId = id;
   document.getElementById('modal-part-info').innerHTML =
-    `Piece <strong>${part.piece}</strong> — Package <strong>${part.package}</strong><br>
+    `Piece <strong>${part.piece}</strong> — Package <strong>${part.pkg}</strong><br>
      <span style="font-size:11px;color:var(--text-muted)">${new Date(part.date).toLocaleString('en-GB')}</span><br><br>
      This will remove it from local storage.<br>
      ${part.synced ? '<span style="color:var(--accent)">⚠ This part is synced — it will remain in Google Sheets and Drive.</span>' : ''}`;
@@ -1450,7 +1450,7 @@ function exportExcel(data) {
     'ID': p.id,
     'Date': new Date(p.date).toLocaleString('en-GB'),
     'Piece ID': p.piece,
-    'Package No.': p.package,
+    'Package No.': p.pkg,
     'Comment': p.comment || '',
     'Latitude': p.lat ?? '',
     'Longitude': p.lng ?? '',
