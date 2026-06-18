@@ -479,7 +479,7 @@
 
       <div class="field">
         <label>Google Apps Script Web App URL</label>
-        <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbw3phev5V4hR8CZ5PHTBZ6HfwFMhP6gzH2JnyrsPCXvMVOFobQochU6FF_YNsOe-KChug/exec" oninput="saveSettings()">
+        <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbzw65-E39jUoJ0loTxb96o9prbAEn55supK0i-6F5GdSY-gaCPsMY0t6i-LWPvu-NIHlA/exec" oninput="saveSettings()">
       </div>
       <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
     </div>
@@ -569,7 +569,7 @@
         <span class="kw">try</span> {
           <span class="kw">const</span> decoded = Utilities.base64Decode(p.photoB64);
           <span class="kw">const</span> blob = Utilities.newBlob(decoded, <span class="str">'image/jpeg'</span>,
-            <span class="str">`${p.piece}_${p.packageNo}_${p.id}.jpg`</span>);
+            <span class="str">`${p.piece}_${p.package}_${p.id}.jpg`</span>);
           <span class="kw">const</span> file = folder.createFile(blob);
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           photoUrl = <span class="str">`https://drive.google.com/uc?id=${file.getId()}`</span>;
@@ -580,7 +580,7 @@
       }
 
       sheet.appendRow([
-        p.id, p.date, p.piece, p.packageNo,
+        p.id, p.date, p.piece, p.package,
         p.comment || <span class="str">''</span>,
         p.lat ?? <span class="str">''</span>,
         p.lng ?? <span class="str">''</span>,
@@ -1051,10 +1051,7 @@ function dms([d, m, s]) { return d + m / 60 + s / 3600; }
 // SAVE PART
 // ════════════════════════════════════════════
 function checkSaveReady() {
-  const piece = document.getElementById('input-piece').value.trim();
-  const pkg   = document.getElementById('input-package').value.trim();
-  // Photo optional — piece + pkg required to save
-  document.getElementById('save-btn').disabled = !(piece && pkg);
+  document.getElementById('save-btn').disabled = !currentPhotoB64;
 }
 
 ['input-piece','input-package','input-comment'].forEach(id =>
@@ -1071,7 +1068,7 @@ async function savePart() {
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece, packageNo: pkg, comment,
+    piece, package: pkg, comment,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
     gpsSource: currentGPS?.source ?? null,
@@ -1149,7 +1146,7 @@ async function pushToSheets(parts) {
       // Extract base64 data portion (strip data:image/jpeg;base64, prefix)
       const b64 = p.photo ? p.photo.split(',')[1] : null;
       return {
-        id: p.id, date: p.date, piece: p.piece, packageNo: p.packageNo,
+        id: p.id, date: p.date, piece: p.piece, package: p.package,
         comment: p.comment, lat: p.lat, lng: p.lng, gpsSource: p.gpsSource,
         photoB64: b64,
       };
@@ -1323,7 +1320,7 @@ function renderMap(parts) {
         <strong>⚙ Part #${i+1}</strong>
         <div class="lf-tags">
           <span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.piece}</span>
-          <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.packageNo}</span>
+          <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.package}</span>
         </div>
         <div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
         ${p.comment ? `<div style="font-size:11px;margin-bottom:4px;">💬 ${p.comment}</div>` : ''}
@@ -1338,7 +1335,7 @@ function renderMap(parts) {
   if (bounds.length === 1) leafletMap.setView(bounds[0], 16);
   else leafletMap.fitBounds(bounds, { padding:[30,30] });
   document.getElementById('map-legend').innerHTML =
-    withGPS.map((p,i) => `<span class="map-legend-item" onclick="focusMarker(${i})">#${i+1} 🏗${p.piece} / 📦${p.packageNo}</span>`).join('');
+    withGPS.map((p,i) => `<span class="map-legend-item" onclick="focusMarker(${i})">#${i+1} 🏗${p.piece} / 📦${p.package}</span>`).join('');
   setTimeout(() => leafletMap.invalidateSize(), 100);
 }
 
@@ -1372,7 +1369,7 @@ function runSearch() {
 
   lastResults = DB.filter(p => {
     const mc = !piece || p.piece.toLowerCase().includes(piece);
-    const mp = !pkg   || p.packageNo.toLowerCase().includes(pkg);
+    const mp = !pkg   || p.package.toLowerCase().includes(pkg);
     return mc && mp;
   });
 
@@ -1397,7 +1394,7 @@ function runSearch() {
       <div class="result-meta">
         <div class="result-ids">
           <span class="tag tag-piece">🏗 ${p.piece}</span>
-          <span class="tag tag-pkg">📦 ${p.packageNo}</span>
+          <span class="tag tag-pkg">📦 ${p.package}</span>
           <span class="tag ${p.synced ? 'tag-synced' : 'tag-local'}">${p.synced ? '☁ Synced' : '💾 Local'}</span>
           ${p.photoUrl ? `<span class="tag tag-drive">📁 Drive</span>` : ''}
         </div>
@@ -1425,7 +1422,7 @@ function askDelete(id) {
   if (!part) return;
   pendingDeleteId = id;
   document.getElementById('modal-part-info').innerHTML =
-    `Piece <strong>${part.piece}</strong> — Package <strong>${part.packageNo}</strong><br>
+    `Piece <strong>${part.piece}</strong> — Package <strong>${part.package}</strong><br>
      <span style="font-size:11px;color:var(--text-muted)">${new Date(part.date).toLocaleString('en-GB')}</span><br><br>
      This will remove it from local storage.<br>
      ${part.synced ? '<span style="color:var(--accent)">⚠ This part is synced — it will remain in Google Sheets and Drive.</span>' : ''}`;
@@ -1453,7 +1450,7 @@ function exportExcel(data) {
     'ID': p.id,
     'Date': new Date(p.date).toLocaleString('en-GB'),
     'Piece ID': p.piece,
-    'Package No.': p.packageNo,
+    'Package No.': p.package,
     'Comment': p.comment || '',
     'Latitude': p.lat ?? '',
     'Longitude': p.lng ?? '',
@@ -1518,7 +1515,7 @@ function doPost(e) {
       if (p.photoB64) {
         try {
           const decoded = Utilities.base64Decode(p.photoB64);
-          const blob = Utilities.newBlob(decoded, 'image/jpeg', \`\${p.piece}_\${p.packageNo}_\${p.id}.jpg\`);
+          const blob = Utilities.newBlob(decoded, 'image/jpeg', \`\${p.piece}_\${p.package}_\${p.id}.jpg\`);
           const file = folder.createFile(blob);
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           photoUrl = \`https://drive.google.com/uc?id=\${file.getId()}\`;
@@ -1526,7 +1523,7 @@ function doPost(e) {
         } catch(driveErr) { photoUrl = 'upload-failed'; }
       }
       sheet.appendRow([
-        p.id, p.date, p.piece, p.packageNo, p.comment||'',
+        p.id, p.date, p.piece, p.package, p.comment||'',
         p.lat??'', p.lng??'', p.gpsSource||'',
         p.lat ? \`https://maps.google.com/maps?q=\${p.lat},\${p.lng}\` : '',
         photoUrl, photoSizeKB, new Date().toISOString()
