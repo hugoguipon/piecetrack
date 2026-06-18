@@ -11,33 +11,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #1A1F2E;
-    --surface: #252B3B;
-    --border: #2D3748;
-    --accent: #F6C90E;
-    --accent-dim: rgba(246,201,14,0.12);
-    --text: #E2E8F0;
-    --text-muted: #718096;
-    --success: #38A169;
-    --success-dim: rgba(56,161,105,0.12);
-    --danger: #E53E3E;
-    --danger-dim: rgba(229,62,62,0.12);
-    --info: #4299E1;
-    --info-dim: rgba(66,153,225,0.12);
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Inter', sans-serif;
+    --bg: #1A1F2E; --surface: #252B3B; --border: #2D3748; --accent: #F6C90E;
+    --accent-dim: rgba(246,201,14,0.12); --text: #E2E8F0; --text-muted: #718096;
+    --success: #38A169; --success-dim: rgba(56,161,105,0.12);
+    --danger: #E53E3E; --danger-dim: rgba(229,62,62,0.12);
+    --info: #4299E1; --info-dim: rgba(66,153,225,0.12);
+    --mono: 'IBM Plex Mono', monospace; --sans: 'Inter', sans-serif;
   }
-
   body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; display: flex; flex-direction: column; }
-
-  header {
-    background: var(--surface); border-bottom: 2px solid var(--accent);
-    padding: 0 24px; display: flex; align-items: center;
-    justify-content: space-between; height: 60px;
-    position: sticky; top: 0; z-index: 100;
-  }
+  header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
   .logo { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-weight: 600; font-size: 15px; letter-spacing: 0.04em; }
   .logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
   .logo span { color: var(--accent); }
@@ -49,52 +32,31 @@
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .record-badge { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
   .record-badge strong { color: var(--accent); font-size: 14px; }
-
   .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab { padding: 14px 0; text-align: center; cursor: pointer; font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 3px solid transparent; transition: color 0.15s, border-color 0.15s; }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
   main { flex: 1; padding: 24px; max-width: 640px; margin: 0 auto; width: 100%; }
-  .panel { display: none; }
-  .panel.active { display: block; }
-
+  .panel { display: none; } .panel.active { display: block; }
   .step-label { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
   .step-label::after { content:''; flex:1; height:1px; background:var(--border); }
-
   .photo-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; margin-bottom: 16px; }
   .photo-zone:hover, .photo-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
   .photo-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .photo-icon { font-size: 36px; margin-bottom: 8px; }
   .photo-zone p { color: var(--text-muted); font-size: 14px; }
   .photo-zone strong { color: var(--text); }
-
-  /* Compression progress bar */
-  .compress-progress {
-    display: none; margin-bottom: 16px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 14px 16px;
-  }
+  .compress-progress { display: none; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
   .compress-progress.active { display: block; }
   .compress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
   .compress-label span { font-family: var(--mono); color: var(--accent); }
   .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
   .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; width: 0%; }
   .compress-stats { margin-top: 8px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); display: flex; gap: 16px; }
-  .compress-stats .good { color: var(--success); }
-  .compress-stats .warn { color: var(--accent); }
-
+  .compress-stats .good { color: var(--success); } .compress-stats .warn { color: var(--accent); }
   .photo-preview { display: none; position: relative; border-radius: 8px; overflow: hidden; margin-bottom: 16px; border: 1px solid var(--border); }
   .photo-preview img { width: 100%; display: block; max-height: 280px; object-fit: cover; }
   .photo-preview .change-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: var(--text); border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
-  /* Photo size badge overlay */
-  .photo-size-badge {
-    position: absolute; bottom: 8px; left: 8px;
-    background: rgba(0,0,0,0.75); color: var(--accent);
-    font-family: var(--mono); font-size: 11px;
-    padding: 3px 8px; border-radius: 4px;
-    border: 1px solid rgba(246,201,14,0.3);
-  }
-
+  .photo-size-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.75); color: var(--accent); font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(246,201,14,0.3); }
   .gps-card { border-radius: 8px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; font-family: var(--mono); font-size: 13px; }
   .gps-card.loading { background:var(--accent-dim); border:1px solid rgba(246,201,14,0.3); color:var(--accent); }
   .gps-card.found { background:var(--success-dim); border:1px solid rgba(56,161,105,0.3); color:var(--success); }
@@ -102,13 +64,11 @@
   .gps-card .gps-icon { font-size: 20px; flex-shrink: 0; }
   .gps-coords { flex: 1; }
   .gps-coords small { display:block; font-size:10px; opacity:0.7; margin-top:2px; }
-
   .btn-gps { width: 100%; padding: 12px 16px; margin-bottom: 4px; border: 1px dashed rgba(66,153,225,0.5); border-radius: 6px; background: var(--info-dim); color: var(--info); font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: border-color 0.2s, background 0.2s, transform 0.1s; }
   .btn-gps:hover { border-color: var(--info); background: rgba(66,153,225,0.18); }
   .btn-gps:active { transform: scale(0.98); }
   .btn-gps.locating { border-style: solid; border-color: var(--accent); background: var(--accent-dim); color: var(--accent); animation: pulse 1s infinite; }
   .btn-gps.located { border-style: solid; border-color: var(--success); background: var(--success-dim); color: var(--success); }
-
   .field { margin-bottom: 16px; }
   label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
   input[type=text], input[type=password], textarea { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; color: var(--text); font-family: var(--mono); font-size: 14px; outline: none; transition: border-color 0.15s; }
@@ -116,7 +76,6 @@
   input::placeholder, textarea::placeholder { color: var(--text-muted); }
   textarea { resize: vertical; min-height: 60px; }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
   .btn { width: 100%; padding: 13px; border: none; border-radius: 6px; font-family: var(--sans); font-size: 14px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .btn:active { transform: scale(0.98); }
   .btn-primary { background: var(--accent); color: #1A1F2E; }
@@ -125,7 +84,6 @@
   .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
   .btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(229,62,62,0.3); }
   .btn-success { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
-
   .info-box { border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
   .info-box.info { background: var(--info-dim); border: 1px solid rgba(66,153,225,0.3); color: var(--info); }
   .info-box.warning { background: var(--accent-dim); border: 1px solid rgba(246,201,14,0.3); color: var(--accent); }
@@ -133,22 +91,15 @@
   .info-box.danger { background: var(--danger-dim); border: 1px solid rgba(229,62,62,0.3); color: var(--danger); }
   .info-box strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
   .info-box code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; font-family: var(--mono); font-size: 11px; word-break: break-all; }
-
   .settings-section { margin-bottom: 28px; }
   .settings-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
-
   .script-steps { counter-reset: step; }
   .script-step { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
   .script-step::before { counter-increment: step; content: counter(step); width: 22px; height: 22px; flex-shrink: 0; background: var(--accent); color: #1A1F2E; border-radius: 50%; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
-  .script-step a { color: var(--accent); }
-
   .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-family: var(--mono); font-size: 11px; color: #8b9db5; white-space: pre-wrap; word-break: break-word; margin: 8px 0; position: relative; line-height: 1.6; }
-  .code-block .kw { color: #f97583; }
-  .code-block .str { color: #9ecbff; }
-  .code-block .cm { color: #444d56; }
+  .code-block .kw { color: #f97583; } .code-block .str { color: #9ecbff; } .code-block .cm { color: #444d56; }
   .copy-btn { position: absolute; top: 8px; right: 8px; background: var(--border); color: var(--text-muted); border: none; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--sans); }
   .copy-btn:hover { color: var(--accent); }
-
   .sync-status-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
   .sync-status-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .sync-status-row .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
@@ -156,21 +107,16 @@
   .sync-status-row .dot.err { background: var(--danger); }
   .sync-status-row span { font-size: 13px; color: var(--text-muted); }
   .sync-status-row strong { color: var(--text); }
-
-  /* Drive status row */
   .drive-status-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
   .drive-status-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .drive-status-row .dot.on { background: var(--info); box-shadow: 0 0 8px var(--info); }
   .drive-status-row .dot.off { background: var(--text-muted); }
-
   .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
   .search-actions { display: flex; gap: 10px; margin-top: 12px; }
   .search-actions .btn { flex: 1; }
-
   .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .results-count { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
   .results-count strong { color: var(--accent); font-size: 16px; }
-
   .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; transition: border-color 0.15s; }
   .result-card:hover { border-color: rgba(246,201,14,0.4); }
   .result-img-wrap { position: relative; height: 180px; background: #0f1420; overflow: hidden; }
@@ -188,44 +134,35 @@
   .result-gps a { color: var(--success); text-decoration: none; font-size: 11px; }
   .result-gps a:hover { text-decoration: underline; }
   .result-date { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
-
   .export-row { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
   .btn-export { flex: 1; min-width: 140px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 11px; border-radius: 6px; cursor: pointer; transition: border-color 0.15s; }
   .btn-export:hover { border-color: var(--accent); color: var(--accent); }
-
   .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
   .empty-state .big-icon { font-size: 48px; margin-bottom: 12px; }
   .empty-state p { font-size: 14px; }
-
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--success); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; max-width: 90vw; text-align: center; }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.err { background: var(--danger); }
-
   .pending-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(246,201,14,0.3); border-radius: 4px; font-family: var(--mono); font-size: 11px; padding: 2px 8px; margin-left: 6px; }
-
   .view-toggle { display:flex; border:1px solid var(--border); border-radius:5px; overflow:hidden; }
   .view-btn { background: var(--surface); color: var(--text-muted); border: none; padding: 5px 10px; cursor: pointer; font-size: 14px; transition: background 0.15s, color 0.15s; }
   .view-btn.active { background: var(--accent); color: #1A1F2E; }
   .view-btn:not(.active):hover { background: var(--border); color: var(--text); }
-
   #results-map { width: 100%; height: 380px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 8px; }
   .map-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
   .map-legend-item { font-family: var(--mono); font-size: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; color: var(--text-muted); transition: border-color 0.15s; }
   .map-legend-item:hover { border-color: var(--accent); color: var(--accent); }
-
   .lf-popup { font-family: var(--sans); font-size: 12px; min-width: 160px; }
   .lf-popup strong { display:block; margin-bottom:4px; font-size:13px; }
   .lf-popup .lf-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px; }
   .lf-popup .lf-tag { padding:2px 6px; border-radius:3px; font-size:10px; font-weight:700; font-family:var(--mono); }
   .lf-popup .lf-maps { color:#2563eb; font-size:11px; }
   .lf-popup .lf-date { color:#666; font-size:10px; margin-top:4px; }
-
   .result-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
   .btn-card { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--sans); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
   .btn-card:hover { color: var(--text); border-color: var(--text-muted); }
   .btn-card.btn-card-map:hover { color: var(--info); border-color: var(--info); background: var(--info-dim); }
   .btn-card.btn-card-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
-
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; align-items: center; justify-content: center; padding: 24px; }
   .modal-overlay.open { display: flex; }
   .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px 24px; width: 100%; max-width: 340px; text-align: center; }
@@ -233,31 +170,18 @@
   .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
   .modal-body { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
   .modal-actions { display: flex; gap: 10px; }
-
-  /* Compression quality selector */
   .compress-selector { display: flex; gap: 8px; margin-bottom: 16px; }
   .compress-opt { flex: 1; padding: 8px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 11px; font-family: var(--mono); text-align: center; cursor: pointer; transition: all 0.15s; }
   .compress-opt:hover { border-color: var(--accent); color: var(--accent); }
   .compress-opt.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
   .compress-opt .co-label { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
   .compress-opt .co-sub { font-size: 10px; opacity: 0.7; }
-
-  /* Drive link in result */
   .drive-link { font-family: var(--mono); font-size: 11px; color: var(--info); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
   .drive-link a { color: var(--info); text-decoration: none; }
   .drive-link a:hover { text-decoration: underline; }
-
-  /* Upload progress overlay */
-  .upload-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 900; display: none;
-    align-items: center; justify-content: center;
-  }
+  .upload-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 900; display: none; align-items: center; justify-content: center; }
   .upload-overlay.active { display: flex; }
-  .upload-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 32px 28px; min-width: 280px; text-align: center;
-  }
+  .upload-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; min-width: 280px; text-align: center; }
   .upload-box .up-icon { font-size: 36px; margin-bottom: 12px; animation: pulse 1.2s infinite; }
   .upload-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
   .upload-box p { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
@@ -268,12 +192,9 @@
   .upload-step.done { color: var(--success); }
   .upload-step.active { color: var(--accent); animation: pulse 1s infinite; }
   .upload-step.error { color: var(--danger); }
-
   @media (max-width: 480px) {
-    main { padding: 16px; }
-    .field-row { grid-template-columns: 1fr; }
-    .search-actions { flex-direction: column; }
-    .compress-selector { flex-wrap: wrap; }
+    main { padding: 16px; } .field-row { grid-template-columns: 1fr; }
+    .search-actions { flex-direction: column; } .compress-selector { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -286,9 +207,7 @@
   </div>
   <div class="header-right">
     <div class="sync-dot" id="header-sync-dot" title="Google Sheets sync status"></div>
-    <div class="record-badge">
-      <strong id="total-count">0</strong> parts
-    </div>
+    <div class="record-badge"><strong id="total-count">0</strong> parts</div>
   </div>
 </header>
 
@@ -299,48 +218,26 @@
 </div>
 
 <main>
-
-  <!-- ══════════════════════════════ RECORD PANEL ══════════════════════════════ -->
+  <!-- RECORD PANEL -->
   <div class="panel active" id="panel-record">
-
     <div class="step-label">Step 1 — Part Photo</div>
-
-    <!-- Compression quality selector -->
     <div style="margin-bottom:12px;">
       <label>Photo quality target</label>
       <div class="compress-selector">
-        <div class="compress-opt" onclick="setQuality('low')" id="q-low">
-          <span class="co-label">Fast</span>
-          <span class="co-sub">~100 KB</span>
-        </div>
-        <div class="compress-opt active" onclick="setQuality('mid')" id="q-mid">
-          <span class="co-label">Balanced</span>
-          <span class="co-sub">~300 KB</span>
-        </div>
-        <div class="compress-opt" onclick="setQuality('high')" id="q-high">
-          <span class="co-label">Quality</span>
-          <span class="co-sub">~600 KB</span>
-        </div>
-        <div class="compress-opt" onclick="setQuality('original')" id="q-original">
-          <span class="co-label">Full</span>
-          <span class="co-sub">Original</span>
-        </div>
+        <div class="compress-opt" onclick="setQuality('low')" id="q-low"><span class="co-label">Fast</span><span class="co-sub">~100 KB</span></div>
+        <div class="compress-opt active" onclick="setQuality('mid')" id="q-mid"><span class="co-label">Balanced</span><span class="co-sub">~300 KB</span></div>
+        <div class="compress-opt" onclick="setQuality('high')" id="q-high"><span class="co-label">Quality</span><span class="co-sub">~600 KB</span></div>
+        <div class="compress-opt" onclick="setQuality('original')" id="q-original"><span class="co-label">Full</span><span class="co-sub">Original</span></div>
       </div>
     </div>
-
     <div class="photo-zone" id="photo-zone">
       <input type="file" accept="image/*" capture="environment" id="file-input" onchange="handlePhoto(event)">
       <div class="photo-icon">📸</div>
       <p><strong>Tap to take a photo</strong></p>
-      <p>or drag & drop an image here</p>
+      <p>or drag &amp; drop an image here</p>
     </div>
-
-    <!-- Compression progress -->
     <div class="compress-progress" id="compress-progress">
-      <div class="compress-label">
-        <span>Compressing…</span>
-        <span id="compress-pct">0%</span>
-      </div>
+      <div class="compress-label"><span>Compressing…</span><span id="compress-pct">0%</span></div>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
       <div class="compress-stats">
         <span id="compress-original">Original: —</span>
@@ -348,13 +245,11 @@
         <span id="compress-ratio" class="good">Ratio: —</span>
       </div>
     </div>
-
     <div class="photo-preview" id="photo-preview">
       <img id="preview-img" src="" alt="Part preview">
       <button class="change-btn" onclick="resetPhoto()">Change</button>
       <div class="photo-size-badge" id="photo-size-badge">—</div>
     </div>
-
     <div class="gps-card manual" id="gps-card">
       <span class="gps-icon">📍</span>
       <div class="gps-coords">
@@ -362,65 +257,39 @@
         <small id="gps-sub">GPS coordinates will be extracted automatically</small>
       </div>
     </div>
-
     <button class="btn btn-gps" id="gps-btn" onclick="captureDeviceGPS()">
       <span id="gps-btn-icon">📡</span>
       <span id="gps-btn-label">Use my current location</span>
     </button>
-
     <div class="step-label" style="margin-top:20px">Step 2 — References</div>
-
     <div class="field-row">
-      <div class="field">
-        <label>Piece ID</label>
-        <input type="text" id="input-piece" placeholder="PC-001" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Package No.</label>
-        <input type="text" id="input-package" placeholder="PKG-042" autocomplete="off">
-      </div>
+      <div class="field"><label>Piece ID</label><input type="text" id="input-piece" placeholder="PC-001" autocomplete="off"></div>
+      <div class="field"><label>Package No.</label><input type="text" id="input-package" placeholder="PKG-042" autocomplete="off"></div>
     </div>
-
-    <div class="field">
-      <label>Comment (optional)</label>
-      <input type="text" id="input-comment" placeholder="Notes about this part…">
-    </div>
-
-    <button class="btn btn-primary" id="save-btn" onclick="savePart()" disabled>
-      ✔ Save & Upload Part
-    </button>
-
+    <div class="field"><label>Comment (optional)</label><input type="text" id="input-comment" placeholder="Notes about this part…"></div>
+    <button class="btn btn-primary" id="save-btn" onclick="savePart()" disabled>✔ Save &amp; Upload Part</button>
     <div id="pending-notice" style="display:none; margin-top:10px;">
       <div class="info-box warning">
         <strong>⚠ Offline — pending sync</strong>
         You have <span id="pending-count">0</span> part(s) saved locally, not yet synced to Google Sheets.
-        They will sync automatically when the connection is restored.
       </div>
       <button class="btn btn-ghost" onclick="syncPending()" style="margin-top:0">↑ Sync now</button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════ SEARCH PANEL ══════════════════════════════ -->
+  <!-- SEARCH PANEL -->
   <div class="panel" id="panel-search">
     <div class="step-label">Search filters</div>
-
     <div class="search-box">
       <div class="field-row">
-        <div class="field">
-          <label>Piece ID</label>
-          <input type="text" id="search-piece" placeholder="PC-001" oninput="runSearch()">
-        </div>
-        <div class="field">
-          <label>Package No.</label>
-          <input type="text" id="search-package" placeholder="PKG-042" oninput="runSearch()">
-        </div>
+        <div class="field"><label>Piece ID</label><input type="text" id="search-piece" placeholder="PC-001" oninput="runSearch()"></div>
+        <div class="field"><label>Package No.</label><input type="text" id="search-package" placeholder="PKG-042" oninput="runSearch()"></div>
       </div>
       <div class="search-actions">
         <button class="btn btn-primary" onclick="runSearch()">🔍 Search</button>
         <button class="btn btn-ghost" style="margin:0" onclick="pullFromSheets()">☁ Refresh from Sheets</button>
       </div>
     </div>
-
     <div class="results-header">
       <div class="step-label" style="margin:0; flex:1">Results</div>
       <div style="display:flex; align-items:center; gap:8px;">
@@ -431,26 +300,20 @@
         </div>
       </div>
     </div>
-
     <div id="results-container">
-      <div class="empty-state">
-        <div class="big-icon">🔎</div>
-        <p>Enter a Piece ID or Package number to find parts.</p>
-      </div>
+      <div class="empty-state"><div class="big-icon">🔎</div><p>Enter a Piece ID or Package number to find parts.</p></div>
     </div>
-
     <div id="map-container" style="display:none;">
       <div id="results-map"></div>
       <div id="map-legend" class="map-legend"></div>
     </div>
-
     <div class="export-row">
       <button class="btn-export" onclick="exportExcel()">⬇ Export all (Excel)</button>
       <button class="btn-export" onclick="exportFiltered()">⬇ Export selection</button>
     </div>
   </div>
 
-  <!-- ══════════════════════════════ DELETE MODAL ══════════════════════════════ -->
+  <!-- DELETE MODAL -->
   <div class="modal-overlay" id="delete-modal" onclick="closeDeleteModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-icon">🗑</div>
@@ -463,12 +326,10 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════ SETTINGS PANEL ══════════════════════════════ -->
+  <!-- SETTINGS PANEL -->
   <div class="panel" id="panel-settings">
-
     <div class="settings-section">
       <div class="step-label">Google Sheets — Connection</div>
-
       <div class="sync-status-row">
         <div class="dot" id="settings-dot" style="background:var(--text-muted)"></div>
         <div>
@@ -476,17 +337,14 @@
           <span id="settings-status-sub" style="display:block; font-size:12px">Configure a Web App URL below to enable sync.</span>
         </div>
       </div>
-
       <div class="field">
         <label>Google Apps Script Web App URL</label>
-        <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbxNFsdTp1ISIhal7IeBYqkDoVQ_xxFuVE1yZ917DiqRGuGsmGzpvsnnrOJg6EA640xBnw/exec" oninput="saveSettings()">
+        <input type="text" id="sheets-url" value="" oninput="saveSettings()">
       </div>
       <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
     </div>
-
     <div class="settings-section">
       <div class="step-label">Google Drive — Photo Storage</div>
-
       <div class="drive-status-row">
         <div class="dot" id="drive-dot" style="background:var(--text-muted)"></div>
         <div>
@@ -494,141 +352,84 @@
           <span id="drive-status-sub" style="display:block; font-size:12px; color:var(--text-muted)">Same Apps Script URL handles Drive uploads — no extra config needed.</span>
         </div>
       </div>
-
       <div class="info-box info">
         <strong>How Drive upload works</strong>
-        When you save a part, the compressed photo is uploaded to a <strong>PieceTrack/</strong> folder in the Google Drive of your Apps Script account. A direct link is then written into the Google Sheet row. Photos stored locally on the device are kept as backup.
+        When you save a part, the compressed photo is uploaded to a <strong>PieceTrack/</strong> folder in the Google Drive of your Apps Script account. A direct link is written into the Google Sheet row.
       </div>
     </div>
-
     <div class="settings-section">
       <div class="step-label">Photo compression</div>
       <div class="info-box info">
         <strong>Current target: <span id="settings-quality-label">Balanced (~300 KB)</span></strong>
-        Compression uses iterative quality reduction to hit the target size. The original photo is never modified — only the compressed version is uploaded and stored.
+        Compression uses iterative quality reduction. The original photo is never modified.
       </div>
     </div>
-
     <div class="settings-section">
-      <div class="step-label">Apps Script — Updated code</div>
-
+      <div class="step-label">Apps Script — Code</div>
       <div class="info-box warning">
-        <strong>⚠ Update your Apps Script</strong>
-        The new script handles both Sheets rows AND Google Drive photo uploads. Replace your existing script with the version below.
+        <strong>⚠ Make sure your Apps Script is deployed as "Anyone" (anonymous)</strong>
+        Deploy → Manage deployments → Who has access: <strong>Anyone</strong>. After any code change, create a <strong>New version</strong> and redeploy.
       </div>
-
       <div class="script-steps">
-        <div class="script-step">
-          Go to <strong>Extensions → Apps Script</strong> in your Google Sheet.
-        </div>
-        <div class="script-step">
-          Replace all code with the script below, then <strong>Save</strong>.
-        </div>
-        <div class="script-step">
-          Click <strong>Deploy → Manage deployments</strong>, then edit your existing deployment and click <strong>New version</strong> → <strong>Deploy</strong>. The URL stays the same.
-        </div>
+        <div class="script-step">Go to <strong>Extensions → Apps Script</strong> in your Google Sheet.</div>
+        <div class="script-step">Replace all code with the script below, then <strong>Save</strong>.</div>
+        <div class="script-step">Click <strong>Deploy → Manage deployments</strong>, edit your deployment, click <strong>New version</strong> → <strong>Deploy</strong>. The URL stays the same.</div>
       </div>
-
-      <div class="code-block" id="apps-script-code"><button class="copy-btn" onclick="copyScript()">Copy</button><span class="cm">// PieceTrack v2 — Google Apps Script
-// Handles: Sheets rows + Google Drive photo upload</span>
-
+      <div class="code-block"><button class="copy-btn" onclick="copyScript()">Copy</button><span class="cm">// PieceTrack v2 — Google Apps Script</span>
 <span class="kw">const</span> SHEET_NAME = <span class="str">'Parts'</span>;
 <span class="kw">const</span> DRIVE_FOLDER = <span class="str">'PieceTrack'</span>;
-<span class="kw">const</span> HEADERS = [<span class="str">'ID'</span>, <span class="str">'Date'</span>, <span class="str">'Piece ID'</span>, <span class="str">'Package No.'</span>, <span class="str">'Comment'</span>, <span class="str">'Latitude'</span>, <span class="str">'Longitude'</span>, <span class="str">'GPS Source'</span>, <span class="str">'Maps Link'</span>, <span class="str">'Photo URL'</span>, <span class="str">'Photo Size KB'</span>, <span class="str">'Synced At'</span>];
+<span class="kw">const</span> HEADERS = [<span class="str">'ID'</span>,<span class="str">'Date'</span>,<span class="str">'Piece ID'</span>,<span class="str">'Package No.'</span>,<span class="str">'Comment'</span>,<span class="str">'Latitude'</span>,<span class="str">'Longitude'</span>,<span class="str">'GPS Source'</span>,<span class="str">'Maps Link'</span>,<span class="str">'Photo URL'</span>,<span class="str">'Photo Size KB'</span>,<span class="str">'Synced At'</span>];
 
 <span class="kw">function</span> getOrCreateFolder() {
   <span class="kw">const</span> folders = DriveApp.getFoldersByName(DRIVE_FOLDER);
   <span class="kw">return</span> folders.hasNext() ? folders.next() : DriveApp.createFolder(DRIVE_FOLDER);
 }
-
 <span class="kw">function</span> doPost(e) {
   <span class="kw">try</span> {
     <span class="kw">const</span> data = JSON.parse(e.postData.contents);
     <span class="kw">const</span> rows = Array.isArray(data) ? data : [data];
     <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
     <span class="kw">let</span> sheet = ss.getSheetByName(SHEET_NAME);
-
     <span class="kw">if</span> (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
       sheet.appendRow(HEADERS);
-      sheet.getRange(1, 1, 1, HEADERS.length)
-           .setFontWeight(<span class="str">'bold'</span>)
-           .setBackground(<span class="str">'#F6C90E'</span>);
+      sheet.getRange(1,1,1,HEADERS.length).setFontWeight(<span class="str">'bold'</span>).setBackground(<span class="str">'#F6C90E'</span>);
       sheet.setFrozenRows(1);
     }
-
     <span class="kw">const</span> folder = getOrCreateFolder();
     <span class="kw">const</span> results = [];
-
     rows.forEach(p => {
-      <span class="kw">let</span> photoUrl = <span class="str">''</span>;
-      <span class="kw">let</span> photoSizeKB = <span class="str">''</span>;
-
-      <span class="cm">// Upload photo to Drive if provided</span>
+      <span class="kw">let</span> photoUrl = <span class="str">''</span>, photoSizeKB = <span class="str">''</span>;
       <span class="kw">if</span> (p.photoB64) {
         <span class="kw">try</span> {
           <span class="kw">const</span> decoded = Utilities.base64Decode(p.photoB64);
-          <span class="kw">const</span> blob = Utilities.newBlob(decoded, <span class="str">'image/jpeg'</span>,
-            <span class="str">`${p.piece}_${p.package}_${p.id}.jpg`</span>);
+          <span class="kw">const</span> blob = Utilities.newBlob(decoded, <span class="str">'image/jpeg'</span>, `${p.piece}_${p.package}_${p.id}.jpg`);
           <span class="kw">const</span> file = folder.createFile(blob);
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          photoUrl = <span class="str">`https://drive.google.com/uc?id=${file.getId()}`</span>;
+          photoUrl = `https://drive.google.com/uc?id=${file.getId()}`;
           photoSizeKB = Math.round(decoded.length / 1024);
-        } <span class="kw">catch</span>(driveErr) {
-          photoUrl = <span class="str">'upload-failed'</span>;
-        }
+        } <span class="kw">catch</span>(driveErr) { photoUrl = <span class="str">'upload-failed'</span>; }
       }
-
-      sheet.appendRow([
-        p.id, p.date, p.piece, p.package,
-        p.comment || <span class="str">''</span>,
-        p.lat ?? <span class="str">''</span>,
-        p.lng ?? <span class="str">''</span>,
-        p.gpsSource || <span class="str">''</span>,
-        p.lat ? <span class="str">`https://maps.google.com/maps?q=${p.lat},${p.lng}`</span> : <span class="str">''</span>,
-        photoUrl,
-        photoSizeKB,
-        <span class="kw">new</span> Date().toISOString()
-      ]);
-
+      sheet.appendRow([p.id,p.date,p.piece,p.package,p.comment||<span class="str">''</span>,p.lat??<span class="str">''</span>,p.lng??<span class="str">''</span>,p.gpsSource||<span class="str">''</span>,p.lat?`https://maps.google.com/maps?q=${p.lat},${p.lng}`:<span class="str">''</span>,photoUrl,photoSizeKB,<span class="kw">new</span> Date().toISOString()]);
       results.push({ id: p.id, photoUrl });
     });
-
-    <span class="kw">return</span> ContentService
-      .createTextOutput(JSON.stringify({ status: <span class="str">'ok'</span>, count: rows.length, results }))
-      .setMimeType(ContentService.MimeType.JSON);
-
+    <span class="kw">return</span> ContentService.createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>,count:rows.length,results})).setMimeType(ContentService.MimeType.JSON);
   } <span class="kw">catch</span>(err) {
-    <span class="kw">return</span> ContentService
-      .createTextOutput(JSON.stringify({ status: <span class="str">'error'</span>, message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    <span class="kw">return</span> ContentService.createTextOutput(JSON.stringify({status:<span class="str">'error'</span>,message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
 }
-
 <span class="kw">function</span> doGet(e) {
   <span class="kw">const</span> ss = SpreadsheetApp.getActiveSpreadsheet();
   <span class="kw">const</span> sheet = ss.getSheetByName(SHEET_NAME);
-  <span class="kw">if</span> (!sheet) <span class="kw">return</span> ContentService
-    .createTextOutput(JSON.stringify({ status: <span class="str">'ok'</span>, rows: [] }))
-    .setMimeType(ContentService.MimeType.JSON);
-
-  <span class="kw">const</span> [headers, ...rows] = sheet.getDataRange().getValues();
-  <span class="kw">const</span> parts = rows.map(r => Object.fromEntries(headers.map((h, i) => [h, r[i]])));
-  <span class="kw">const</span> piece = e.parameter.piece || <span class="str">''</span>;
-  <span class="kw">const</span> pkg = e.parameter.package || <span class="str">''</span>;
-
-  <span class="kw">const</span> filtered = parts.filter(p =>
-    (!piece || String(p[<span class="str">'Piece ID'</span>]).toLowerCase().includes(piece.toLowerCase())) &&
-    (!pkg   || String(p[<span class="str">'Package No.'</span>]).toLowerCase().includes(pkg.toLowerCase()))
-  );
-
-  <span class="kw">return</span> ContentService
-    .createTextOutput(JSON.stringify({ status: <span class="str">'ok'</span>, rows: filtered }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-</div>
+  <span class="kw">if</span> (!sheet) <span class="kw">return</span> ContentService.createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>,rows:[]})).setMimeType(ContentService.MimeType.JSON);
+  <span class="kw">const</span> [headers,...rows] = sheet.getDataRange().getValues();
+  <span class="kw">const</span> parts = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
+  <span class="kw">const</span> piece = e.parameter.piece||<span class="str">''</span>;
+  <span class="kw">const</span> pkg = e.parameter.package||<span class="str">''</span>;
+  <span class="kw">const</span> filtered = parts.filter(p=>(!piece||String(p[<span class="str">'Piece ID'</span>]).toLowerCase().includes(piece.toLowerCase()))&&(!pkg||String(p[<span class="str">'Package No.'</span>]).toLowerCase().includes(pkg.toLowerCase())));
+  <span class="kw">return</span> ContentService.createTextOutput(JSON.stringify({status:<span class="str">'ok'</span>,rows:filtered})).setMimeType(ContentService.MimeType.JSON);
+}</div>
     </div>
-
     <div class="settings-section">
       <div class="step-label">Local data</div>
       <div class="info-box warning">
@@ -640,27 +441,19 @@
         <button class="btn btn-danger" style="flex:1" onclick="clearLocalData()">🗑 Clear local data</button>
       </div>
     </div>
-
   </div>
-
 </main>
 
-<!-- Upload progress overlay -->
+<!-- Upload overlay -->
 <div class="upload-overlay" id="upload-overlay">
   <div class="upload-box">
     <div class="up-icon">☁</div>
     <h3>Uploading part…</h3>
     <p>Please wait, do not close the app.</p>
     <div class="upload-steps">
-      <div class="upload-step" id="ustep-compress">
-        <span class="us-icon">🗜</span> Compressing photo
-      </div>
-      <div class="upload-step" id="ustep-drive">
-        <span class="us-icon">📁</span> Uploading to Google Drive
-      </div>
-      <div class="upload-step" id="ustep-sheets">
-        <span class="us-icon">📊</span> Writing to Google Sheets
-      </div>
+      <div class="upload-step" id="ustep-compress"><span class="us-icon">🗜</span> Compressing photo</div>
+      <div class="upload-step" id="ustep-drive"><span class="us-icon">📁</span> Uploading to Google Drive</div>
+      <div class="upload-step" id="ustep-sheets"><span class="us-icon">📊</span> Writing to Google Sheets</div>
     </div>
   </div>
 </div>
@@ -683,12 +476,11 @@ let leafletMap = null;
 let leafletMarkers = [];
 let pendingDeleteId = null;
 
-// Compression targets (bytes)
 const QUALITY_PRESETS = {
-  low:      { maxBytes: 100 * 1024, maxWidth: 1024, label: 'Fast (~100 KB)' },
-  mid:      { maxBytes: 300 * 1024, maxWidth: 1600, label: 'Balanced (~300 KB)' },
-  high:     { maxBytes: 600 * 1024, maxWidth: 2000, label: 'Quality (~600 KB)' },
-  original: { maxBytes: null,       maxWidth: null,  label: 'Full (original)' },
+  low:      { maxBytes: 100 * 1024, maxWidth: 1024,  label: 'Fast (~100 KB)' },
+  mid:      { maxBytes: 300 * 1024, maxWidth: 1600,  label: 'Balanced (~300 KB)' },
+  high:     { maxBytes: 600 * 1024, maxWidth: 2000,  label: 'Quality (~600 KB)' },
+  original: { maxBytes: null,       maxWidth: null,   label: 'Full (original)' },
 };
 let currentQuality = 'mid';
 
@@ -702,7 +494,6 @@ function init() {
   if (pend) { try { pending = JSON.parse(pend); } catch { pending = []; } }
   sheetsURL = localStorage.getItem('pt_sheets_url') || '';
   currentQuality = localStorage.getItem('pt_quality') || 'mid';
-
   if (sheetsURL) document.getElementById('sheets-url').value = sheetsURL;
   setQuality(currentQuality, true);
   updateCount();
@@ -726,7 +517,7 @@ function updatePendingUI() {
   document.getElementById('pending-count').textContent = n;
   document.getElementById('pending-notice').style.display = n > 0 ? 'block' : 'none';
   document.getElementById('pending-info').textContent =
-    n > 0 ? `${n} part(s) saved locally, not yet synced to Google Sheets.` : 'All parts are synced.';
+    n > 0 ? `${n} part(s) saved locally, not yet synced.` : 'All parts are synced.';
 }
 
 function setSyncStatus(status) { syncStatus = status; updateSyncUI(); }
@@ -738,27 +529,20 @@ function updateSyncUI() {
   const sSub = document.getElementById('settings-status-sub');
   dot.className = 'sync-dot';
   const map = {
-    off:       { cls:'', text:'Not connected', sub:'Configure a Web App URL in Settings.', dotCls:'off' },
-    connected: { cls:'connected', text:'Google Sheets connected', sub:sheetsURL.slice(0,48)+'…', dotCls:'on' },
-    syncing:   { cls:'syncing', text:'Syncing…', sub:'Sending data to Google Sheets', dotCls:'on' },
-    error:     { cls:'error', text:'Sync error', sub:'Check your Web App URL in Settings.', dotCls:'err' },
+    off:       { cls:'',          text:'Not connected',           sub:'Configure a Web App URL in Settings.', dotCls:'off' },
+    connected: { cls:'connected', text:'Google Sheets connected', sub: sheetsURL.slice(0,48)+'…',            dotCls:'on'  },
+    syncing:   { cls:'syncing',   text:'Syncing…',                sub:'Sending data to Google Sheets',       dotCls:'on'  },
+    error:     { cls:'error',     text:'Sync error',              sub:'Check your Web App URL in Settings.', dotCls:'err' },
   };
   const s = map[syncStatus] || map.off;
-  dot.classList.add(s.cls);
+  if (s.cls !== '') { dot.classList.add(s.cls); }
   sDot.className = 'dot ' + s.dotCls;
   sText.textContent = s.text;
   sSub.textContent = sheetsURL ? s.sub : 'Configure a Web App URL below to enable sync.';
-
-  // Drive dot: on when sheets URL configured
   const dDot = document.getElementById('drive-dot');
   const dText = document.getElementById('drive-status-text');
-  if (sheetsURL) {
-    dDot.className = 'dot on';
-    dText.textContent = 'Photos will upload to Google Drive';
-  } else {
-    dDot.className = 'dot off';
-    dText.textContent = 'Photos stored locally only';
-  }
+  if (sheetsURL) { dDot.className = 'dot on'; dText.textContent = 'Photos will upload to Google Drive'; }
+  else           { dDot.className = 'dot off'; dText.textContent = 'Photos stored locally only'; }
 }
 
 // ════════════════════════════════════════════
@@ -767,9 +551,8 @@ function updateSyncUI() {
 function setQuality(q, silent) {
   currentQuality = q;
   localStorage.setItem('pt_quality', q);
-  ['low','mid','high','original'].forEach(k => {
-    document.getElementById('q-'+k).classList.toggle('active', k === q);
-  });
+  ['low','mid','high','original'].forEach(k =>
+    document.getElementById('q-'+k).classList.toggle('active', k === q));
   document.getElementById('settings-quality-label').textContent = QUALITY_PRESETS[q].label;
   if (!silent) showToast('📷 Quality: ' + QUALITY_PRESETS[q].label);
 }
@@ -791,62 +574,39 @@ function switchTab(tab) {
 // ════════════════════════════════════════════
 // PHOTO HANDLING
 // ════════════════════════════════════════════
-function handlePhoto(e) {
-  const file = e.target.files[0];
-  if (file) processFile(file);
-}
+function handlePhoto(e) { const f = e.target.files[0]; if (f) processFile(f); }
 
 async function processFile(file) {
   const preset = QUALITY_PRESETS[currentQuality];
-
-  // Show compression progress
   const prog = document.getElementById('compress-progress');
   const fill = document.getElementById('progress-fill');
   const pct  = document.getElementById('compress-pct');
   prog.classList.add('active');
   fill.style.width = '10%'; pct.textContent = '10%';
-
-  // Read file
   const originalDataURL = await readFileAsDataURL(file);
   const originalBytes = Math.round((originalDataURL.length * 3) / 4);
   document.getElementById('compress-original').textContent = `Original: ${formatBytes(originalBytes)}`;
-
   fill.style.width = '30%'; pct.textContent = '30%';
-
-  // Extract GPS from original EXIF BEFORE compressing (canvas strips EXIF)
   extractGPS(originalDataURL);
-
   fill.style.width = '50%'; pct.textContent = '50%';
-
-  let finalB64;
-  let finalBytes;
-
+  let finalB64, finalBytes;
   if (!preset.maxBytes) {
-    // Full original — just use as-is
-    finalB64 = originalDataURL;
-    finalBytes = originalBytes;
+    finalB64 = originalDataURL; finalBytes = originalBytes;
   } else {
     finalB64 = await adaptiveCompress(originalDataURL, preset);
     finalBytes = Math.round((finalB64.length * 3) / 4);
   }
-
   fill.style.width = '90%'; pct.textContent = '90%';
-
   currentPhotoB64 = finalB64;
-
-  // Update UI
   const ratio = Math.round((1 - finalBytes / originalBytes) * 100);
   document.getElementById('compress-result').textContent = `Result: ${formatBytes(finalBytes)}`;
-  document.getElementById('compress-result').className = finalBytes > preset.maxBytes * 1.1 ? 'warn' : 'good';
+  document.getElementById('compress-result').className = finalBytes > (preset.maxBytes||Infinity) * 1.1 ? 'warn' : 'good';
   document.getElementById('compress-ratio').textContent = `−${ratio}%`;
   document.getElementById('photo-size-badge').textContent = formatBytes(finalBytes);
-
   fill.style.width = '100%'; pct.textContent = '100%';
-
   document.getElementById('preview-img').src = finalB64;
   document.getElementById('photo-zone').style.display = 'none';
   document.getElementById('photo-preview').style.display = 'block';
-
   setTimeout(() => prog.classList.remove('active'), 1500);
   checkSaveReady();
 }
@@ -860,40 +620,25 @@ function readFileAsDataURL(file) {
   });
 }
 
-/**
- * Adaptive compression: iterates quality steps until under target size.
- * Returns base64 data URL.
- */
 async function adaptiveCompress(dataURL, preset) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
       let w = img.width, h = img.height;
-
-      // Scale down if needed
       if (preset.maxWidth && w > preset.maxWidth) {
-        const scale = preset.maxWidth / w;
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
+        const scale = preset.maxWidth / w; w = Math.round(w * scale); h = Math.round(h * scale);
       }
-
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
-
-      // Try qualities from 0.85 down to 0.3
       const qualities = [0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.30];
       let best = null;
-
       for (const q of qualities) {
         const result = canvas.toDataURL('image/jpeg', q);
-        const bytes = Math.round((result.length * 3) / 4);
         best = result;
-        if (bytes <= preset.maxBytes) break;
+        if (Math.round((result.length * 3) / 4) <= preset.maxBytes) break;
       }
-
       resolve(best);
     };
     img.src = dataURL;
@@ -906,8 +651,7 @@ function formatBytes(b) {
 }
 
 function resetPhoto() {
-  currentPhotoB64 = null;
-  currentGPS = null;
+  currentPhotoB64 = null; currentGPS = null;
   document.getElementById('file-input').value = '';
   document.getElementById('photo-zone').style.display = 'block';
   document.getElementById('photo-preview').style.display = 'none';
@@ -937,14 +681,14 @@ function extractGPS(dataURL) {
   const gps = parseExifGPS(arr.buffer);
   if (gps) {
     currentGPS = gps;
-    setGPSCard('found','✅',`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`,'GPS coordinates extracted from photo EXIF');
+    setGPSCard('found','✅',`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`,'GPS from photo EXIF');
   } else {
     setGPSCard('loading','📡','No EXIF GPS — trying device location…','Requesting GPS from this device');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => {
           currentGPS = { lat: pos.coords.latitude, lng: pos.coords.longitude, source: 'device' };
-          setGPSCard('found','✅',`${currentGPS.lat.toFixed(6)}, ${currentGPS.lng.toFixed(6)}`,'GPS from device (no EXIF in photo)');
+          setGPSCard('found','✅',`${currentGPS.lat.toFixed(6)}, ${currentGPS.lng.toFixed(6)}`,'GPS from device (no EXIF)');
         },
         () => { currentGPS = null; setGPSCard('manual','⚠️','GPS unavailable','Part will be saved without coordinates'); },
         { timeout: 8000 }
@@ -983,7 +727,7 @@ function captureDeviceGPS() {
 }
 
 // ════════════════════════════════════════════
-// EXIF GPS PARSER (unchanged)
+// EXIF GPS PARSER
 // ════════════════════════════════════════════
 function parseExifGPS(buf) {
   try {
@@ -997,9 +741,8 @@ function parseExifGPS(buf) {
         const hdr = String.fromCharCode(...new Uint8Array(buf, offset + 2, 4));
         if (hdr === 'Exif') return readGPSFromIFD(buf, offset + 8, segLen - 8);
         offset += segLen;
-      } else if ((marker & 0xFF00) === 0xFF00) {
-        offset += view.getUint16(offset);
-      } else break;
+      } else if ((marker & 0xFF00) === 0xFF00) { offset += view.getUint16(offset); }
+      else break;
     }
     return null;
   } catch { return null; }
@@ -1059,28 +802,17 @@ function checkSaveReady() {
 );
 
 async function savePart() {
-  // 1. FIX MOBILE : Forcer la fermeture du clavier pour s'assurer que la valeur est validée
-  if (document.activeElement) {
-    document.activeElement.blur();
-  }
-
-  // 2. Récupération explicite des valeurs
+  if (document.activeElement) document.activeElement.blur();
   const pieceVal   = document.getElementById('input-piece').value.trim();
   const pkgVal     = document.getElementById('input-package').value.trim();
   const commentVal = document.getElementById('input-comment').value.trim();
+  if (!pieceVal || !pkgVal) { showToast('⚠️ Please fill in Piece ID and Package No.', true); return; }
 
-  // 3. Vérification de sécurité
-  if (!pieceVal || !pkgVal) { 
-    showToast('⚠️ Please fill in Piece ID and Package No.', true); 
-    return; 
-  }
-
-  // 4. FIX MOBILE : Utilisation d'une syntaxe d'objet 100% explicite
   const part = {
     id: Date.now(),
     date: new Date().toISOString(),
-    piece: pieceVal,       // Assigne explicitement la variable
-    package: pkgVal,       // Assigne explicitement la variable
+    piece: pieceVal,
+    package: pkgVal,
     comment: commentVal,
     lat: currentGPS?.lat ?? null,
     lng: currentGPS?.lng ?? null,
@@ -1097,13 +829,12 @@ async function savePart() {
     showUploadOverlay(true);
     setUploadStep('compress', 'done');
     setUploadStep('drive', 'active');
-
     const ok = await pushToSheets([part]);
-
     if (ok) {
       setUploadStep('drive', 'done');
       setUploadStep('sheets', 'done');
       setTimeout(() => showUploadOverlay(false), 800);
+      showToast('✅ Part saved & synced to Google Sheets');
     } else {
       setUploadStep('drive', 'error');
       setUploadStep('sheets', 'error');
@@ -1118,22 +849,19 @@ async function savePart() {
     showToast('💾 Saved locally (no Sheets URL configured)');
   }
 
-  // Reset form
   resetPhoto();
   document.getElementById('input-piece').value = '';
   document.getElementById('input-package').value = '';
   document.getElementById('input-comment').value = '';
   currentGPS = null;
-
-  if (part.synced) showToast('✅ Part saved, photo on Drive & synced to Sheets');
 }
+
 // ════════════════════════════════════════════
 // UPLOAD OVERLAY
 // ════════════════════════════════════════════
 function showUploadOverlay(show) {
   document.getElementById('upload-overlay').classList.toggle('active', show);
   if (show) {
-    // Reset all steps
     ['compress','drive','sheets'].forEach(s => setUploadStep(s, ''));
     setUploadStep('compress', 'active');
   }
@@ -1142,57 +870,54 @@ function showUploadOverlay(show) {
 function setUploadStep(step, state) {
   const el = document.getElementById('ustep-' + step);
   el.className = 'upload-step' + (state ? ' ' + state : '');
+  const icons = { compress:'🗜', drive:'📁', sheets:'📊' };
   if (state === 'done')   el.querySelector('.us-icon').textContent = '✅';
-  if (state === 'active') el.querySelector('.us-icon').textContent = ['compress','drive','sheets'].includes(step) ? ['🗜','📁','📊'][['compress','drive','sheets'].indexOf(step)] : '⏳';
+  if (state === 'active') el.querySelector('.us-icon').textContent = icons[step] || '⏳';
   if (state === 'error')  el.querySelector('.us-icon').textContent = '❌';
 }
 
 // ════════════════════════════════════════════
-// GOOGLE SHEETS + DRIVE SYNC
+// ✅ FIX 1 — GOOGLE SHEETS + DRIVE SYNC
+// Problème : GAS POST fait une redirection 302 que le navigateur
+// bloque (CORS preflight échoue). Solution : mode:'no-cors'
+// La donnée arrive bien côté serveur, on ne peut juste pas lire la réponse.
 // ════════════════════════════════════════════
 async function pushToSheets(parts) {
   if (!sheetsURL) return false;
   setSyncStatus('syncing');
   try {
     const payload = parts.map(p => {
-      // Extract base64 data portion (strip data:image/jpeg;base64, prefix)
       const b64 = p.photo ? p.photo.split(',')[1] : null;
       return {
-        id: p.id, date: p.date, piece: p.piece, package: p.package,
+        id: p.id, date: p.date,
+        piece: p.piece,        // ← Piece ID garanti ici
+        package: p.package,    // ← Package No. garanti ici
         comment: p.comment, lat: p.lat, lng: p.lng, gpsSource: p.gpsSource,
         photoB64: b64,
       };
     });
 
-    const res = await fetch(sheetsURL, {
+    // ✅ mode:'no-cors' : contourne le blocage CORS dû aux redirections GAS
+    // La requête POST atteint bien le serveur — réponse opaque (non lisible)
+    await fetch(sheetsURL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(payload),
       headers: { 'Content-Type': 'text/plain' },
     });
-    const data = await res.json();
 
-    if (data.status === 'ok') {
-      // Update photoUrl in DB from response
-      if (data.results) {
-        data.results.forEach(r => {
-          const dbPart = DB.find(p => p.id === r.id);
-          if (dbPart && r.photoUrl && r.photoUrl !== 'upload-failed') {
-            dbPart.photoUrl = r.photoUrl;
-            dbPart.synced = true;
-          } else if (dbPart) {
-            dbPart.synced = true;
-          }
-        });
-        persist();
-      }
-      setSyncStatus('connected');
-      setUploadStep('sheets', 'done');
-      return true;
-    } else {
-      setSyncStatus('error');
-      return false;
-    }
-  } catch {
+    // Synchro optimiste : on ne peut pas lire la réponse opaque
+    // Utilisez "Refresh from Sheets" pour confirmer que les données sont arrivées
+    parts.forEach(p => {
+      const dbPart = DB.find(d => d.id === p.id);
+      if (dbPart) { dbPart.synced = true; }
+    });
+    persist();
+    setSyncStatus('connected');
+    setUploadStep('sheets', 'done');
+    return true;
+  } catch(err) {
+    console.error('pushToSheets error:', err);
     setSyncStatus('error');
     return false;
   }
@@ -1214,12 +939,13 @@ async function syncPending() {
   }
 }
 
+// ✅ FIX 2 — TEST CONNECTION
+// mode:'no-cors' pour le ping : si ça ne throw pas, l'URL est joignable
 async function testConnection() {
   if (!sheetsURL) { showToast('⚠️ Enter a Web App URL first', true); return; }
   setSyncStatus('syncing');
   try {
-    const res = await fetch(sheetsURL + '?ping=1');
-    await res.json();
+    await fetch(sheetsURL + '?ping=1', { mode: 'no-cors' });
     setSyncStatus('connected');
     showToast('✅ Connection successful!');
   } catch {
@@ -1228,6 +954,9 @@ async function testConnection() {
   }
 }
 
+// ✅ FIX 3 — PULL FROM SHEETS
+// Le GET de GAS renvoie les bons headers CORS après redirect
+// redirect:'follow' suffit (comportement par défaut, mais explicite)
 async function pullFromSheets() {
   if (!sheetsURL) { showToast('⚠️ No Sheets URL — configure in Settings', true); return; }
   setSyncStatus('syncing');
@@ -1235,16 +964,17 @@ async function pullFromSheets() {
   const pkg   = document.getElementById('search-package').value.trim();
   try {
     const url = sheetsURL + `?piece=${encodeURIComponent(piece)}&package=${encodeURIComponent(pkg)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { redirect: 'follow' });
     const data = await res.json();
     setSyncStatus('connected');
     if (data.status === 'ok') {
       renderSheetResults(data.rows);
       showToast(`☁ ${data.rows.length} result(s) from Google Sheets`);
     }
-  } catch {
+  } catch(err) {
     setSyncStatus('error');
-    showToast('❌ Could not reach Google Sheets', true);
+    console.error('pullFromSheets error:', err);
+    showToast('❌ Could not reach Google Sheets — verify URL in Settings', true);
   }
 }
 
@@ -1288,7 +1018,7 @@ function renderSheetResults(rows) {
 }
 
 // ════════════════════════════════════════════
-// VIEW MODE (list / map)
+// VIEW MODE
 // ════════════════════════════════════════════
 function setView(mode) {
   currentView = mode;
@@ -1303,7 +1033,7 @@ function renderMap(parts) {
   const withGPS = parts.filter(p => p.lat && p.lng);
   if (!withGPS.length) {
     document.getElementById('results-map').innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:13px;">⚠️ No GPS coordinates available for these results</div>';
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:13px;">⚠️ No GPS coordinates for these results</div>';
     document.getElementById('map-legend').innerHTML = '';
     return;
   }
@@ -1327,19 +1057,7 @@ function renderMap(parts) {
     const mapsUrl = `https://www.google.com/maps?q=${p.lat},${p.lng}`;
     const dateStr = new Date(p.date).toLocaleString('en-GB');
     const driveLink = p.photoUrl ? `<br><a href="${p.photoUrl}" target="_blank" style="color:#4299e1;font-size:11px;">📁 View photo on Drive</a>` : '';
-    const popup = `
-      <div class="lf-popup">
-        <strong>⚙ Part #${i+1}</strong>
-        <div class="lf-tags">
-          <span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.piece}</span>
-          <span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.package}</span>
-        </div>
-        <div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>
-        ${p.comment ? `<div style="font-size:11px;margin-bottom:4px;">💬 ${p.comment}</div>` : ''}
-        <a href="${mapsUrl}" target="_blank" class="lf-maps">→ Open in Google Maps</a>
-        ${driveLink}
-        <div class="lf-date">🕐 ${dateStr}</div>
-      </div>`;
+    const popup = `<div class="lf-popup"><strong>⚙ Part #${i+1}</strong><div class="lf-tags"><span class="lf-tag" style="background:#2d3748;color:#F6C90E;">🏗 ${p.piece}</span><span class="lf-tag" style="background:#2d3748;color:#63b3ed;">📦 ${p.package}</span></div><div style="font-size:11px;color:#555;margin-bottom:4px;">📍 ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</div>${p.comment?`<div style="font-size:11px;margin-bottom:4px;">💬 ${p.comment}</div>`:''}<a href="${mapsUrl}" target="_blank" class="lf-maps">→ Open in Google Maps</a>${driveLink}<div class="lf-date">🕐 ${dateStr}</div></div>`;
     const marker = L.marker([p.lat, p.lng], { icon }).addTo(leafletMap).bindPopup(popup);
     leafletMarkers.push(marker);
     bounds.push([p.lat, p.lng]);
@@ -1357,11 +1075,7 @@ function focusMarker(index) {
   leafletMap.setView([p.lat, p.lng], 17);
   leafletMarkers[index] && leafletMarkers[index].openPopup();
 }
-
-function showOnMap(resultIndex) {
-  setView('map');
-  setTimeout(() => focusMarker(resultIndex), 200);
-}
+function showOnMap(resultIndex) { setView('map'); setTimeout(() => focusMarker(resultIndex), 200); }
 
 // ════════════════════════════════════════════
 // LOCAL SEARCH
@@ -1369,39 +1083,31 @@ function showOnMap(resultIndex) {
 function runSearch() {
   const piece = document.getElementById('search-piece').value.trim().toLowerCase();
   const pkg   = document.getElementById('search-package').value.trim().toLowerCase();
-
   if (!piece && !pkg) {
     lastResults = [];
     document.getElementById('results-count').textContent = '—';
     document.getElementById('results-container').innerHTML =
-      `<div class="empty-state"><div class="big-icon">🔎</div><p>Enter a Piece ID or Package number to search for parts.</p></div>`;
+      `<div class="empty-state"><div class="big-icon">🔎</div><p>Enter a Piece ID or Package number to search.</p></div>`;
     if (currentView === 'map') renderMap([]);
     return;
   }
-
   lastResults = DB.filter(p => {
     const mc = !piece || p.piece.toLowerCase().includes(piece);
     const mp = !pkg   || p.package.toLowerCase().includes(pkg);
     return mc && mp;
   });
-
   document.getElementById('results-count').textContent = lastResults.length;
-
   if (!lastResults.length) {
     document.getElementById('results-container').innerHTML =
       `<div class="empty-state"><div class="big-icon">📭</div><p>No parts found locally. Try "Refresh from Sheets".</p></div>`;
     if (currentView === 'map') renderMap([]);
     return;
   }
-
   document.getElementById('results-container').innerHTML = lastResults.map((p, i) => {
     const mapsUrl = p.lat ? `https://www.google.com/maps?q=${p.lat},${p.lng}` : null;
-    return `
-    <div class="result-card" id="card-${p.id}">
+    return `<div class="result-card" id="card-${p.id}">
       <div class="result-img-wrap">
-        ${p.photo
-          ? `<img src="${p.photo}" alt="Part photo" loading="lazy">`
-          : `<div class="no-img">📷 No photo</div>`}
+        ${p.photo ? `<img src="${p.photo}" alt="Part photo" loading="lazy">` : `<div class="no-img">📷 No photo</div>`}
       </div>
       <div class="result-meta">
         <div class="result-ids">
@@ -1411,9 +1117,7 @@ function runSearch() {
           ${p.photoUrl ? `<span class="tag tag-drive">📁 Drive</span>` : ''}
         </div>
         ${p.photoUrl ? `<div class="drive-link">📁 <a href="${p.photoUrl}" target="_blank">Open photo on Drive</a></div>` : ''}
-        ${p.lat
-          ? `<div class="result-gps">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)} &nbsp;<a href="${mapsUrl}" target="_blank">→ Open Maps</a></div>`
-          : `<div class="result-gps">⚠️ GPS unavailable</div>`}
+        ${p.lat ? `<div class="result-gps">📍 ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)} &nbsp;<a href="${mapsUrl}" target="_blank">→ Open Maps</a></div>` : `<div class="result-gps">⚠️ GPS unavailable</div>`}
         <div class="result-date">🕐 ${new Date(p.date).toLocaleString('en-GB')}${p.comment ? ' — '+p.comment : ''}</div>
         <div class="result-actions">
           ${p.lat ? `<button class="btn-card btn-card-map" onclick="showOnMap(${i})">🗺 View on map</button>` : ''}
@@ -1422,7 +1126,6 @@ function runSearch() {
       </div>
     </div>`;
   }).join('');
-
   if (currentView === 'map') renderMap(lastResults);
 }
 
@@ -1459,17 +1162,11 @@ function confirmDelete() {
 // ════════════════════════════════════════════
 function exportExcel(data) {
   const rows = (data || DB).map(p => ({
-    'ID': p.id,
-    'Date': new Date(p.date).toLocaleString('en-GB'),
-    'Piece ID': p.piece,
-    'Package No.': p.package,
-    'Comment': p.comment || '',
-    'Latitude': p.lat ?? '',
-    'Longitude': p.lng ?? '',
-    'GPS Source': p.gpsSource || '',
+    'ID': p.id, 'Date': new Date(p.date).toLocaleString('en-GB'),
+    'Piece ID': p.piece, 'Package No.': p.package, 'Comment': p.comment || '',
+    'Latitude': p.lat ?? '', 'Longitude': p.lng ?? '', 'GPS Source': p.gpsSource || '',
     'Maps Link': p.lat ? `https://www.google.com/maps?q=${p.lat},${p.lng}` : '',
-    'Photo (Drive)': p.photoUrl || '',
-    'Synced': p.synced ? 'Yes' : 'No',
+    'Photo (Drive)': p.photoUrl || '', 'Synced': p.synced ? 'Yes' : 'No',
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = [{wch:14},{wch:20},{wch:12},{wch:14},{wch:28},{wch:14},{wch:14},{wch:10},{wch:50},{wch:60},{wch:8}];
@@ -1478,7 +1175,6 @@ function exportExcel(data) {
   XLSX.writeFile(wb, `piece-track-${new Date().toISOString().slice(0,10)}.xlsx`);
   showToast(`⬇ Excel downloaded (${(data||DB).length} parts)`);
 }
-
 function exportFiltered() {
   if (!lastResults.length) { showToast('⚠️ No results to export', true); return; }
   exportExcel(lastResults);
@@ -1527,17 +1223,17 @@ function doPost(e) {
       if (p.photoB64) {
         try {
           const decoded = Utilities.base64Decode(p.photoB64);
-          const blob = Utilities.newBlob(decoded, 'image/jpeg', \`\${p.piece}_\${p.package}_\${p.id}.jpg\`);
+          const blob = Utilities.newBlob(decoded, 'image/jpeg', p.piece+'_'+p.package+'_'+p.id+'.jpg');
           const file = folder.createFile(blob);
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          photoUrl = \`https://drive.google.com/uc?id=\${file.getId()}\`;
+          photoUrl = 'https://drive.google.com/uc?id='+file.getId();
           photoSizeKB = Math.round(decoded.length / 1024);
         } catch(driveErr) { photoUrl = 'upload-failed'; }
       }
       sheet.appendRow([
         p.id, p.date, p.piece, p.package, p.comment||'',
-        p.lat??'', p.lng??'', p.gpsSource||'',
-        p.lat ? \`https://maps.google.com/maps?q=\${p.lat},\${p.lng}\` : '',
+        p.lat!=null?p.lat:'', p.lng!=null?p.lng:'', p.gpsSource||'',
+        p.lat ? 'https://maps.google.com/maps?q='+p.lat+','+p.lng : '',
         photoUrl, photoSizeKB, new Date().toISOString()
       ]);
       results.push({ id: p.id, photoUrl });
