@@ -256,11 +256,13 @@
     <button class="change-btn" onclick="resetPhoto()">Change</button>
     <div class="photo-size-badge" id="photo-size-badge">—</div>
   </div>
-
+  
   <div class="step-label" style="margin-top:20px">Step 2 — Zone</div>
   <div class="zone-selector-wrap">
     <div class="zone-type-toggle">
-      <button class="zone-type-btn active" id="zone-btn-A" onclick="selectZoneType('A')">Zone A<sub style="font-size:9px">i</sub></button>
+      <button class="zone-type-btn active" id="zone-btn-canopy" onclick="selectZoneType('Canopy')">Canopy</button>
+      <button class="zone-type-btn" id="zone-btn-outside" onclick="selectZoneType('Outside')">Outside</button>
+      <button class="zone-type-btn" id="zone-btn-A" onclick="selectZoneType('A')">Zone A<sub style="font-size:9px">i</sub></button>
       <button class="zone-type-btn" id="zone-btn-B" onclick="selectZoneType('B')">Zone B<sub style="font-size:9px">jk</sub></button>
       <button class="zone-type-btn" id="zone-btn-none" onclick="selectZoneType('none')" style="flex:0.5;font-size:11px;">Aucune</button>
     </div>
@@ -355,11 +357,11 @@
     </div>
     <div class="zone-map-wrap" id="zone-map-wrap">
       <div class="zone-rect-container" id="zrc-A">
-        <div class="zone-rect-title">🅰 STOCK A</div>
+        <div class="zone-rect-title">🅰 Rectangle A</div>
         <div class="zone-rect-svg-wrap"><svg id="svg-A" class="zone-svg"></svg></div>
       </div>
       <div class="zone-rect-container" id="zrc-B" style="flex:1;min-width:0;">
-        <div class="zone-rect-title">🅱 STOCK B</div>
+        <div class="zone-rect-title">🅱 Rectangle B</div>
         <div class="zone-rect-svg-wrap"><svg id="svg-B" class="zone-svg"></svg></div>
       </div>
     </div>
