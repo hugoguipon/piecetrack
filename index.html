@@ -8,53 +8,59 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+  /* =========================================
+     CSS RESET & VARIABLES
+  ========================================= */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
+    /* Color Palette */
     --bg: #1A1F2E; --surface: #252B3B; --border: #2D3748; --accent: #F6C90E;
     --accent-dim: rgba(246,201,14,0.12); --text: #E2E8F0; --text-muted: #718096;
     --success: #38A169; --success-dim: rgba(56,161,105,0.12);
     --danger: #E53E3E; --danger-dim: rgba(229,62,62,0.12);
     --info: #4299E1; --info-dim: rgba(66,153,225,0.12);
+    --canopy: #9F7AEA; --canopy-dim: rgba(159,122,234,0.12);
+    --outside: #ED8936; --outside-dim: rgba(237,137,54,0.12);
+    /* Typography */
     --mono: 'IBM Plex Mono', monospace; --sans: 'Inter', sans-serif;
   }
+  
+  /* =========================================
+     GLOBAL STYLES
+  ========================================= */
   body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; display: flex; flex-direction: column; }
+  
+  /* HEADER & NAVIGATION */
   header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
   .logo { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-weight: 600; font-size: 15px; letter-spacing: 0.04em; }
   .logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
   .logo span { color: var(--accent); }
   .header-right { display: flex; align-items: center; gap: 12px; }
+  
+  /* Sync Status Dot */
   .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; transition: background 0.3s; }
   .sync-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
   .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
   .sync-dot.error { background: var(--danger); }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  
   .record-badge { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
   .record-badge strong { color: var(--accent); font-size: 14px; }
+  
+  /* Tabs Navigation */
   .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--surface); border-bottom: 1px solid var(--border); }
   .tab { padding: 14px 0; text-align: center; cursor: pointer; font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 3px solid transparent; transition: color 0.15s, border-color 0.15s; }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  
+  /* Main Container */
   main { flex: 1; padding: 24px; max-width: 640px; margin: 0 auto; width: 100%; }
   .panel { display: none; } .panel.active { display: block; }
   .step-label { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
   .step-label::after { content:''; flex:1; height:1px; background:var(--border); }
-  .photo-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; margin-bottom: 16px; }
-  .photo-zone:hover, .photo-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
-  .photo-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .photo-icon { font-size: 36px; margin-bottom: 8px; }
-  .photo-zone p { color: var(--text-muted); font-size: 14px; }
-  .photo-zone strong { color: var(--text); }
-  .compress-progress { display: none; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
-  .compress-progress.active { display: block; }
-  .compress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
-  .compress-label span { font-family: var(--mono); color: var(--accent); }
-  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; width: 0%; }
-  .compress-stats { margin-top: 8px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); display: flex; gap: 16px; }
-  .compress-stats .good { color: var(--success); } .compress-stats .warn { color: var(--accent); }
-  .photo-preview { display: none; position: relative; border-radius: 8px; overflow: hidden; margin-bottom: 16px; border: 1px solid var(--border); }
-  .photo-preview img { width: 100%; display: block; max-height: 280px; object-fit: cover; }
-  .photo-preview .change-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: var(--text); border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
-  .photo-size-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.75); color: var(--accent); font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(246,201,14,0.3); }
+  
+  /* =========================================
+     FORMS & INPUTS
+  ========================================= */
   .field { margin-bottom: 16px; }
   label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
   input[type=text], input[type=password], textarea, select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; color: var(--text); font-family: var(--mono); font-size: 14px; outline: none; transition: border-color 0.15s; }
@@ -63,6 +69,8 @@
   textarea { resize: vertical; min-height: 60px; }
   select option { background: var(--surface); color: var(--text); }
   .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  
+  /* Buttons */
   .btn { width: 100%; padding: 13px; border: none; border-radius: 6px; font-family: var(--sans); font-size: 14px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .btn:active { transform: scale(0.98); }
   .btn-primary { background: var(--accent); color: #1A1F2E; }
@@ -71,45 +79,128 @@
   .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
   .btn-danger { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(229,62,62,0.3); }
   .btn-success { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
+  
+  /* Info Alerts */
   .info-box { border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
   .info-box.info { background: var(--info-dim); border: 1px solid rgba(66,153,225,0.3); color: var(--info); }
   .info-box.warning { background: var(--accent-dim); border: 1px solid rgba(246,201,14,0.3); color: var(--accent); }
   .info-box.success { background: var(--success-dim); border: 1px solid rgba(56,161,105,0.3); color: var(--success); }
   .info-box.danger { background: var(--danger-dim); border: 1px solid rgba(229,62,62,0.3); color: var(--danger); }
   .info-box strong { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
-  .settings-section { margin-bottom: 28px; }
-  .script-steps { counter-reset: step; }
-  .script-step { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
-  .script-step::before { counter-increment: step; content: counter(step); width: 22px; height: 22px; flex-shrink: 0; background: var(--accent); color: #1A1F2E; border-radius: 50%; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
-  .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-family: var(--mono); font-size: 11px; color: #8b9db5; white-space: pre-wrap; word-break: break-word; margin: 8px 0; position: relative; line-height: 1.6; max-height: 320px; overflow-y: auto; }
-  .copy-btn { position: sticky; top: 0; float: right; background: var(--border); color: var(--text-muted); border: none; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--sans); }
-  .copy-btn:hover { color: var(--accent); }
-  .sync-status-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
-  .sync-status-row .dot, .drive-status-row .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .sync-status-row .dot.on, .drive-status-row .dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
-  .sync-status-row .dot.off, .drive-status-row .dot.off { background: var(--text-muted); }
-  .sync-status-row .dot.err { background: var(--danger); }
-  .sync-status-row span, .drive-status-row span { font-size: 13px; color: var(--text-muted); }
-  .sync-status-row strong, .drive-status-row strong { color: var(--text); }
-  .drive-status-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+  
+  /* =========================================
+     PHOTO CAPTURE MODULE
+  ========================================= */
+  .photo-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 32px 20px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; margin-bottom: 16px; }
+  .photo-zone:hover, .photo-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
+  .photo-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .photo-icon { font-size: 36px; margin-bottom: 8px; }
+  .photo-zone p { color: var(--text-muted); font-size: 14px; }
+  .photo-zone strong { color: var(--text); }
+  
+  /* Compression Progress Bar */
+  .compress-progress { display: none; margin-bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .compress-progress.active { display: block; }
+  .compress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .compress-label span { font-family: var(--mono); color: var(--accent); }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; width: 0%; }
+  .compress-stats { margin-top: 8px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); display: flex; gap: 16px; }
+  .compress-stats .good { color: var(--success); } .compress-stats .warn { color: var(--accent); }
+  
+  /* Photo Preview */
+  .photo-preview { display: none; position: relative; border-radius: 8px; overflow: hidden; margin-bottom: 16px; border: 1px solid var(--border); }
+  .photo-preview img { width: 100%; display: block; max-height: 280px; object-fit: cover; }
+  .photo-preview .change-btn { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: var(--text); border: none; border-radius: 4px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
+  .photo-size-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.75); color: var(--accent); font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(246,201,14,0.3); }
 
-  /* ZONE SELECTOR */
-  .zone-selector-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-  .zone-type-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
-  .zone-type-btn { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; }
-  .zone-type-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
-  .zone-type-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text); }
-  .zone-fields-a, .zone-fields-b { display: none; }
-  .zone-fields-a.visible, .zone-fields-b.visible { display: block; }
+  /* =========================================
+     LOCATION SELECTOR MODULE
+  ========================================= */
+  .location-selector-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .location-level { margin-bottom: 14px; }
+  .location-level:last-child { margin-bottom: 0; }
+  .level-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+
+  /* Level 1: Canopy vs Outside */
+  .loc-toggle { display: flex; gap: 8px; }
+  .loc-btn { flex: 1; padding: 11px 8px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .loc-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text); }
+  .loc-btn.active-canopy { border-color: var(--canopy); background: var(--canopy-dim); color: var(--canopy); }
+  .loc-btn.active-outside { border-color: var(--outside); background: var(--outside-dim); color: var(--outside); }
+
+  /* Level 2: Sub-zones */
+  .subzone-wrap { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .subzone-wrap.visible { display: block; }
+  .subzone-toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .subzone-btn { padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .subzone-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text); }
+  .subzone-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+
+  /* Level 3: Position Inputs */
+  .position-wrap { display: none; margin-top: 12px; }
+  .position-wrap.visible { display: block; }
+
+  /* Zone Preview Badge */
   .zone-preview-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(66,153,225,0.15); border: 1px solid rgba(66,153,225,0.4); border-radius: 5px; padding: 6px 12px; font-family: var(--mono); font-size: 15px; font-weight: 600; color: #63b3ed; margin-top: 10px; }
   .zone-dot-preview { width: 8px; height: 8px; border-radius: 50%; background: #4299E1; flex-shrink: 0; }
 
-  /* SEARCH SUB-TABS */
+  /* =========================================
+     SEARCH & RESULTS UI
+  ========================================= */
   .search-subtabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
   .search-subtab { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid transparent; transition: all 0.15s; }
   .search-subtab.active { color: var(--info); border-bottom-color: var(--info); }
 
-  /* ZONE MAP VISUALIZATION */
+  .loc-filter-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .loc-filter-btn { flex:1; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .loc-filter-btn.active-canopy { border-color: var(--canopy); background: var(--canopy-dim); color: var(--canopy); }
+  .loc-filter-btn.active-outside { border-color: var(--outside); background: var(--outside-dim); color: var(--outside); }
+  .loc-filter-btn.active-all { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+
+  .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .search-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .search-actions .btn { flex: 1; }
+  
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .results-count { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+  .results-count strong { color: var(--accent); font-size: 16px; }
+  
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; transition: border-color 0.15s; }
+  .result-card:hover { border-color: rgba(246,201,14,0.4); }
+  .result-img-wrap { position: relative; height: 180px; background: #0f1420; overflow: hidden; }
+  .result-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .result-img-wrap .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 13px; }
+  .result-meta { padding: 14px 16px; }
+  
+  /* Tags for search results */
+  .result-ids { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tag { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 3px; font-weight: 600; }
+  .tag-piece { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(246,201,14,0.3); }
+  .tag-pkg { background: rgba(100,149,237,0.12); color: #63b3ed; border: 1px solid rgba(99,179,237,0.3); }
+  .tag-zone { background: rgba(66,153,225,0.12); color: var(--info); border: 1px solid rgba(66,153,225,0.3); }
+  .tag-loc-canopy { background: var(--canopy-dim); color: var(--canopy); border: 1px solid rgba(159,122,234,0.3); }
+  .tag-loc-outside { background: var(--outside-dim); color: var(--outside); border: 1px solid rgba(237,137,54,0.3); }
+  .tag-synced { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
+  .tag-local { background: rgba(113,128,150,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+  .result-date { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+  
+  .export-row { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-export { flex: 1; min-width: 140px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 11px; border-radius: 6px; cursor: pointer; transition: border-color 0.15s; }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent); }
+  
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+  .empty-state .big-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+  
+  .result-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .btn-card { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--sans); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .btn-card:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-card.btn-card-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
+
+  /* =========================================
+     ZONE SVG MAP UI
+  ========================================= */
   .zone-map-wrap { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; align-items: flex-start; }
   .zone-rect-container { }
   .zone-rect-title { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; text-align: center; }
@@ -136,39 +227,9 @@
   .zone-part-chip { font-family: var(--mono); font-size: 11px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(246,201,14,0.3); border-radius: 3px; padding: 2px 8px; cursor: pointer; transition: background 0.1s; }
   .zone-part-chip:hover { background: rgba(246,201,14,0.22); }
 
-  .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-  .search-actions { display: flex; gap: 10px; margin-top: 12px; }
-  .search-actions .btn { flex: 1; }
-  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-  .results-count { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
-  .results-count strong { color: var(--accent); font-size: 16px; }
-  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; transition: border-color 0.15s; }
-  .result-card:hover { border-color: rgba(246,201,14,0.4); }
-  .result-img-wrap { position: relative; height: 180px; background: #0f1420; overflow: hidden; }
-  .result-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-  .result-img-wrap .no-img { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); font-size: 13px; }
-  .result-meta { padding: 14px 16px; }
-  .result-ids { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-  .tag { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 3px; font-weight: 600; }
-  .tag-piece { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(246,201,14,0.3); }
-  .tag-pkg { background: rgba(100,149,237,0.12); color: #63b3ed; border: 1px solid rgba(99,179,237,0.3); }
-  .tag-zone { background: rgba(66,153,225,0.12); color: var(--info); border: 1px solid rgba(66,153,225,0.3); }
-  .tag-synced { background: var(--success-dim); color: var(--success); border: 1px solid rgba(56,161,105,0.3); }
-  .tag-local { background: rgba(113,128,150,0.1); color: var(--text-muted); border: 1px solid var(--border); }
-  .result-date { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
-  .export-row { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-  .btn-export { flex: 1; min-width: 140px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 11px; border-radius: 6px; cursor: pointer; transition: border-color 0.15s; }
-  .btn-export:hover { border-color: var(--accent); color: var(--accent); }
-  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
-  .empty-state .big-icon { font-size: 48px; margin-bottom: 12px; }
-  .empty-state p { font-size: 14px; }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--success); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; max-width: 90vw; text-align: center; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.err { background: var(--danger); }
-  .result-actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-  .btn-card { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--sans); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
-  .btn-card:hover { color: var(--text); border-color: var(--text-muted); }
-  .btn-card.btn-card-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-dim); }
+  /* =========================================
+     MODALS & OVERLAYS
+  ========================================= */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; align-items: center; justify-content: center; padding: 24px; }
   .modal-overlay.open { display: flex; }
   .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px 24px; width: 100%; max-width: 340px; text-align: center; }
@@ -176,15 +237,7 @@
   .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
   .modal-body { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
   .modal-actions { display: flex; gap: 10px; }
-  .compress-selector { display: flex; gap: 8px; margin-bottom: 16px; }
-  .compress-opt { flex: 1; padding: 8px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 11px; font-family: var(--mono); text-align: center; cursor: pointer; transition: all 0.15s; }
-  .compress-opt:hover { border-color: var(--accent); color: var(--accent); }
-  .compress-opt.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
-  .compress-opt .co-label { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
-  .compress-opt .co-sub { font-size: 10px; opacity: 0.7; }
-  .drive-link { font-family: var(--mono); font-size: 11px; color: var(--info); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
-  .drive-link a { color: var(--info); text-decoration: none; }
-  .drive-link a:hover { text-decoration: underline; }
+  
   .upload-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 900; display: none; align-items: center; justify-content: center; }
   .upload-overlay.active { display: flex; }
   .upload-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; min-width: 280px; text-align: center; }
@@ -198,10 +251,37 @@
   .upload-step.done { color: var(--success); }
   .upload-step.active { color: var(--accent); animation: pulse 1s infinite; }
   .upload-step.error { color: var(--danger); }
+
+  /* Toast Notification */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--success); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; max-width: 90vw; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.err { background: var(--danger); }
+
+  /* =========================================
+     SETTINGS PANEL STYLES
+  ========================================= */
+  .settings-section { margin-bottom: 28px; }
+  .script-steps { counter-reset: step; }
+  .script-step { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .script-step::before { counter-increment: step; content: counter(step); width: 22px; height: 22px; flex-shrink: 0; background: var(--accent); color: #1A1F2E; border-radius: 50%; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .code-block { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 14px; font-family: var(--mono); font-size: 11px; color: #8b9db5; white-space: pre-wrap; word-break: break-word; margin: 8px 0; position: relative; line-height: 1.6; max-height: 320px; overflow-y: auto; }
+  .copy-btn { position: sticky; top: 0; float: right; background: var(--border); color: var(--text-muted); border: none; border-radius: 4px; padding: 3px 8px; font-size: 11px; cursor: pointer; font-family: var(--sans); }
+  .copy-btn:hover { color: var(--accent); }
+
+  /* Compression Quality Options */
+  .compress-selector { display: flex; gap: 8px; margin-bottom: 16px; }
+  .compress-opt { flex: 1; padding: 8px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 11px; font-family: var(--mono); text-align: center; cursor: pointer; transition: all 0.15s; }
+  .compress-opt:hover { border-color: var(--accent); color: var(--accent); }
+  .compress-opt.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+  .compress-opt .co-label { font-weight: 700; font-size: 12px; display: block; margin-bottom: 2px; }
+  .compress-opt .co-sub { font-size: 10px; opacity: 0.7; }
+
+  /* Responsive Adjustments */
   @media (max-width: 480px) {
     main { padding: 16px; } .field-row { grid-template-columns: 1fr; }
     .search-actions { flex-direction: column; } .compress-selector { flex-wrap: wrap; }
     .zone-map-wrap { flex-direction: column; }
+    .loc-toggle { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -226,6 +306,7 @@
 
 <main>
 <div class="panel active" id="panel-record">
+
   <div class="step-label">Step 1 — Part Photo</div>
   <div style="margin-bottom:12px;">
     <label>Photo quality target</label>
@@ -236,12 +317,14 @@
       <div class="compress-opt" onclick="setQuality('original')" id="q-original"><span class="co-label">Full</span><span class="co-sub">Original</span></div>
     </div>
   </div>
+  
   <div class="photo-zone" id="photo-zone">
     <input type="file" accept="image/*" capture="environment" id="file-input" onchange="handlePhoto(event)">
     <div class="photo-icon">📸</div>
     <p><strong>Tap to take a photo</strong></p>
-    <p>or drag & drop an image here</p>
+    <p>or drag &amp; drop an image here</p>
   </div>
+  
   <div class="compress-progress" id="compress-progress">
     <div class="compress-label"><span>Compressing…</span><span id="compress-pct">0%</span></div>
     <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -251,46 +334,90 @@
       <span id="compress-ratio" class="good">Ratio: —</span>
     </div>
   </div>
+  
   <div class="photo-preview" id="photo-preview">
     <img id="preview-img" src="" alt="Part preview">
     <button class="change-btn" onclick="resetPhoto()">Change</button>
     <div class="photo-size-badge" id="photo-size-badge">—</div>
   </div>
-  
-  <div class="step-label" style="margin-top:20px">Step 2 — Zone</div>
-  <div class="zone-selector-wrap">
-    <div class="zone-type-toggle">
-      <button class="zone-type-btn active" id="zone-btn-canopy" onclick="selectZoneType('Canopy')">Canopy</button>
-      <button class="zone-type-btn" id="zone-btn-outside" onclick="selectZoneType('Outside')">Outside</button>
-      <button class="zone-type-btn" id="zone-btn-A" onclick="selectZoneType('A')">Zone A<sub style="font-size:9px">i</sub></button>
-      <button class="zone-type-btn" id="zone-btn-B" onclick="selectZoneType('B')">Zone B<sub style="font-size:9px">jk</sub></button>
-      <button class="zone-type-btn" id="zone-btn-none" onclick="selectZoneType('none')" style="flex:0.5;font-size:11px;">Aucune</button>
-    </div>
-    <div class="zone-fields-a visible" id="zone-fields-A">
-      <div class="field" style="margin-bottom:0">
-        <label>Position i — A<sub>i</sub> avec i = 1 à 14</label>
-        <select id="zone-a-i" onchange="updateZonePreview()">
-          <option value="">— choisir i —</option>
-        </select>
+
+  <div class="step-label" style="margin-top:20px">Step 2 — Location &amp; Zone</div>
+  <div class="location-selector-wrap">
+
+    <div class="location-level">
+      <div class="level-label">Location</div>
+      <div class="loc-toggle">
+        <button class="loc-btn" id="loc-btn-canopy" onclick="selectLocation('canopy')"> Canopy</button>
+        <button class="loc-btn" id="loc-btn-outside" onclick="selectLocation('outside')"> Outside</button>
       </div>
     </div>
-    <div class="zone-fields-b" id="zone-fields-B">
-      <div class="field-row">
-        <div class="field" style="margin-bottom:0">
-          <label>Rangée j (a → e)</label>
-          <select id="zone-b-j" onchange="updateZonePreview()">
-            <option value="">— j —</option>
-            <option>a</option><option>b</option><option>c</option><option>d</option><option>e</option>
-          </select>
-        </div>
-        <div class="field" style="margin-bottom:0">
-          <label>Colonne k (0 → 100)</label>
-          <select id="zone-b-k" onchange="updateZonePreview()">
-            <option value="">— k —</option>
+
+    <div class="subzone-wrap" id="subzone-wrap-canopy">
+      <div class="level-label">Zone — Canopy (A, B or C)</div>
+      <div class="subzone-toggle">
+        <button class="subzone-btn" id="csub-A" onclick="selectSubZone('canopy','A')">Zone A<sub style="font-size:9px">ic</sub></button>
+        <button class="subzone-btn" id="csub-B" onclick="selectSubZone('canopy','B')">Zone B<sub style="font-size:9px">ic</sub></button>
+        <button class="subzone-btn" id="csub-C" onclick="selectSubZone('canopy','C')">Zone C<sub style="font-size:9px">ic</sub></button>
+      </div>
+      <div class="position-wrap" id="pos-canopy-A">
+        <div class="field" style="margin-bottom:0;margin-top:10px;">
+          <label>Position i<sub>c</sub> (1 → 10)</label>
+          <select id="c-a-i" onchange="updateZonePreview()">
+            <option value="">— select i<sub>c</sub> —</option>
           </select>
         </div>
       </div>
+      <div class="position-wrap" id="pos-canopy-B">
+        <div class="field" style="margin-bottom:0;margin-top:10px;">
+          <label>Position i<sub>c</sub> (1 → 10)</label>
+          <select id="c-b-i" onchange="updateZonePreview()">
+            <option value="">— select i<sub>c</sub> —</option>
+          </select>
+        </div>
+      </div>
+      <div class="position-wrap" id="pos-canopy-C">
+        <div class="field" style="margin-bottom:0;margin-top:10px;">
+          <label>Position i<sub>c</sub> (1 → 10)</label>
+          <select id="c-c-i" onchange="updateZonePreview()">
+            <option value="">— select i<sub>c</sub> —</option>
+          </select>
+        </div>
+      </div>
     </div>
+
+    <div class="subzone-wrap" id="subzone-wrap-outside">
+      <div class="level-label">Zone — Outside (A or B)</div>
+      <div class="subzone-toggle">
+        <button class="subzone-btn" id="osub-A" onclick="selectSubZone('outside','A')">Zone A<sub style="font-size:9px">i</sub></button>
+        <button class="subzone-btn" id="osub-B" onclick="selectSubZone('outside','B')">Zone B<sub style="font-size:9px">jk</sub></button>
+      </div>
+      <div class="position-wrap" id="pos-outside-A">
+        <div class="field" style="margin-bottom:0;margin-top:10px;">
+          <label>Position i (1 → 14)</label>
+          <select id="o-a-i" onchange="updateZonePreview()">
+            <option value="">— select i —</option>
+          </select>
+        </div>
+      </div>
+      <div class="position-wrap" id="pos-outside-B">
+        <div class="field-row" style="margin-top:10px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Row j (a → e)</label>
+            <select id="o-b-j" onchange="updateZonePreview()">
+              <option value="">— j —</option>
+              <option>a</option><option>b</option><option>c</option><option>d</option><option>e</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Column k (0 → 100)</label>
+            <select id="o-b-k" onchange="updateZonePreview()">
+              <option value="">— k —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="zone-preview-wrap" style="display:none;margin-top:10px;">
       <div class="zone-preview-badge">
         <div class="zone-dot-preview"></div>
@@ -305,7 +432,9 @@
     <div class="field"><label>Package No.</label><input type="text" id="input-package" placeholder="PKG-042" autocomplete="off"></div>
   </div>
   <div class="field"><label>Comment (optional)</label><input type="text" id="input-comment" placeholder="Notes about this part…"></div>
-  <button class="btn btn-primary" id="save-btn" onclick="savePart()" disabled>✔ Save & Upload Part</button>
+  
+  <button class="btn btn-primary" id="save-btn" onclick="savePart()" disabled>✔ Save &amp; Upload Part</button>
+  
   <div id="pending-notice" style="display:none; margin-top:10px;">
     <div class="info-box warning">
       <strong>⚠ Offline — pending sync</strong>
@@ -316,98 +445,103 @@
 </div>
 
 <div class="panel" id="panel-search">
+  
   <div class="search-subtabs">
-    <div class="search-subtab active" id="stab-parts" onclick="switchSearchTab('parts')">🏗 Pièce / Colis</div>
-    <div class="search-subtab" id="stab-zone" onclick="switchSearchTab('zone')">📐 Par Zone</div>
+    <div class="search-subtab active" id="stab-parts" onclick="switchSearchTab('parts')">🏗 Piece / Package</div>
+    <div class="search-subtab" id="stab-zone" onclick="switchSearchTab('zone')">📐 By Zone</div>
   </div>
 
   <div id="search-panel-parts">
-    <div class="step-label">Filtres de recherche</div>
+    <div class="loc-filter-tabs">
+      <button class="loc-filter-btn" id="lf-all" onclick="setLocFilter('all')">All</button>
+      <button class="loc-filter-btn" id="lf-canopy" onclick="setLocFilter('canopy')">🏗 Canopy</button>
+      <button class="loc-filter-btn" id="lf-outside" onclick="setLocFilter('outside')">🌿 Outside</button>
+    </div>
+
+    <div class="step-label">Search filters</div>
     <div class="search-box">
       <div class="field-row">
         <div class="field"><label>Piece ID</label><input type="text" id="search-piece" placeholder="PC-001" oninput="runSearch()"></div>
         <div class="field"><label>Package No.</label><input type="text" id="search-package" placeholder="PKG-042" oninput="runSearch()"></div>
       </div>
       <div class="search-actions">
-        <button class="btn btn-primary" onclick="runSearch()">🔍 Rechercher</button>
+        <button class="btn btn-primary" onclick="runSearch()">🔍 Search</button>
         <button class="btn btn-ghost" style="margin:0" onclick="pullFromSheets()">☁ Refresh Sheets</button>
       </div>
     </div>
     <div class="results-header">
-      <div class="step-label" style="margin:0; flex:1">Résultats</div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div class="results-count"><strong id="results-count">—</strong> résultat(s)</div>
-      </div>
+      <div class="step-label" style="margin:0; flex:1">Results</div>
+      <div class="results-count"><strong id="results-count">—</strong> result(s)</div>
     </div>
     <div id="results-container">
       <div class="empty-state"><div class="big-icon">🔎</div><p>Enter a Piece ID or Package number to find parts.</p></div>
     </div>
     <div class="export-row">
       <button class="btn-export" onclick="exportExcel()">⬇ Export all (Excel)</button>
-      <button class="btn-export" onclick="exportFiltered()">⬇ Export sélection</button>
+      <button class="btn-export" onclick="exportFiltered()">⬇ Export selection</button>
     </div>
   </div>
 
   <div id="search-panel-zone" style="display:none;">
-    <div class="step-label">Vue d'ensemble des zones</div>
+    <div class="step-label">Zones Overview</div>
     <div class="zone-map-legend">
-      <div class="zone-legend-item"><div class="zone-legend-swatch" style="background:rgba(56,161,105,0.25);border:1px solid rgba(56,161,105,0.6);"></div>A des pièces</div>
-      <div class="zone-legend-item"><div class="zone-legend-swatch" style="background:rgba(37,43,59,0.8);border:1px solid #2D3748;"></div>Vide</div>
-      <div class="zone-legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#4299E1;flex-shrink:0;box-shadow:0 0 6px rgba(66,153,225,0.8);"></div>Zone sélectionnée</div>
+      <div class="zone-legend-item"><div class="zone-legend-swatch" style="background:rgba(56,161,105,0.25);border:1px solid rgba(56,161,105,0.6);"></div>Has parts</div>
+      <div class="zone-legend-item"><div class="zone-legend-swatch" style="background:rgba(37,43,59,0.8);border:1px solid #2D3748;"></div>Empty</div>
+      <div class="zone-legend-item"><div style="width:10px;height:10px;border-radius:50%;background:#4299E1;flex-shrink:0;box-shadow:0 0 6px rgba(66,153,225,0.8);"></div>Selected</div>
     </div>
+
     <div class="zone-map-wrap" id="zone-map-wrap">
-      <div class="zone-rect-container" id="zrc-A">
-        <div class="zone-rect-title">🅰 Rectangle A</div>
-        <div class="zone-rect-svg-wrap"><svg id="svg-A" class="zone-svg"></svg></div>
+      <div style="width:100%">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--canopy);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">🏗 Canopy</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="zone-rect-container"><div class="zone-rect-title">Canopy A</div><div class="zone-rect-svg-wrap"><svg id="svg-CA" class="zone-svg"></svg></div></div>
+          <div class="zone-rect-container"><div class="zone-rect-title">Canopy B</div><div class="zone-rect-svg-wrap"><svg id="svg-CB" class="zone-svg"></svg></div></div>
+          <div class="zone-rect-container"><div class="zone-rect-title">Canopy C</div><div class="zone-rect-svg-wrap"><svg id="svg-CC" class="zone-svg"></svg></div></div>
+        </div>
       </div>
-      <div class="zone-rect-container" id="zrc-B" style="flex:1;min-width:0;">
-        <div class="zone-rect-title">🅱 Rectangle B</div>
-        <div class="zone-rect-svg-wrap"><svg id="svg-B" class="zone-svg"></svg></div>
+      <div style="width:100%;margin-top:16px;">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--outside);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">🌿 Outside</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="zone-rect-container"><div class="zone-rect-title">Outside A</div><div class="zone-rect-svg-wrap"><svg id="svg-OA" class="zone-svg"></svg></div></div>
+          <div class="zone-rect-container" style="flex:1;min-width:0;"><div class="zone-rect-title">Outside B</div><div class="zone-rect-svg-wrap"><svg id="svg-OB" class="zone-svg"></svg></div></div>
+        </div>
       </div>
     </div>
 
     <div class="zone-search-box">
-      <label>Filtrer par zone</label>
+      <label>Filter by zone</label>
       <div class="field-row" style="margin-top:8px;">
         <div class="field" style="margin-bottom:0;">
-          <select id="zs-type" onchange="onZoneFilterChange()">
-            <option value="">— Toutes zones —</option>
-            <option value="A">Zone A (Ai)</option>
-            <option value="B">Zone B (Bjk)</option>
+          <select id="zs-loc" onchange="onZoneFilterChange()">
+            <option value="">— All locations —</option>
+            <option value="canopy">🏗 Canopy</option>
+            <option value="outside">🌿 Outside</option>
           </select>
         </div>
-        <div class="field" style="margin-bottom:0;" id="zs-a-wrap" style="display:none;">
-          <select id="zs-a-i" onchange="renderZoneResults()" style="display:none;"></select>
+        <div class="field" style="margin-bottom:0;" id="zs-subtype-wrap" style="display:none;">
+          <select id="zs-subtype" onchange="onZoneSubTypeChange()" style="display:none;"></select>
         </div>
+      </div>
+      <div class="field" id="zs-pos-wrap" style="display:none;margin-top:8px;">
+        <select id="zs-pos" onchange="renderZoneResults()"></select>
       </div>
       <div class="field-row" id="zs-b-wrap" style="display:none;margin-top:8px;">
         <div class="field" style="margin-bottom:0;">
           <select id="zs-b-j" onchange="renderZoneResults()">
-            <option value="">Toutes rangées</option>
+            <option value="">All rows</option>
             <option>a</option><option>b</option><option>c</option><option>d</option><option>e</option>
           </select>
         </div>
         <div class="field" style="margin-bottom:0;">
           <select id="zs-b-k" onchange="renderZoneResults()">
-            <option value="">Toutes colonnes</option>
+            <option value="">All columns</option>
           </select>
         </div>
       </div>
     </div>
+    
     <div id="zone-results-container">
-      <div class="empty-state"><div class="big-icon">📐</div><p>Sélectionnez un type de zone ou cliquez sur une cellule.</p></div>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="delete-modal" onclick="closeDeleteModal()">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <div class="modal-icon">🗑</div>
-    <h3 class="modal-title">Delete this part?</h3>
-    <p class="modal-body" id="modal-part-info">This action cannot be undone.</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" style="flex:1;margin:0" onclick="closeDeleteModal()">Cancel</button>
-      <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Delete</button>
+      <div class="empty-state"><div class="big-icon">📐</div><p>Select a zone or click on a cell.</p></div>
     </div>
   </div>
 </div>
@@ -424,10 +558,11 @@
     </div>
     <div class="field">
       <label>Google Apps Script Web App URL</label>
-      <input type="text" id="sheets-url" placeholder="https://script.google.com/…" oninput="saveSettings()">
+      <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycby-54f1vAvAzR0xBITEsfO97eqGEW66xH4MhHaHKvsNbNWLtoBEVTjHVLpBLU3AYdtovw/exec" oninput="saveSettings()">
     </div>
     <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
   </div>
+  
   <div class="settings-section">
     <div class="step-label">Google Drive — Photo Storage</div>
     <div class="drive-status-row">
@@ -438,18 +573,21 @@
       </div>
     </div>
   </div>
+  
   <div class="settings-section">
-    <div class="step-label">Apps Script — Code (v3 with Zone)</div>
+    <div class="step-label">Apps Script — Code (v4 Canopy/Outside)</div>
     <div class="info-box warning">
       <strong>⚠ Deploy as "Anyone" (anonymous)</strong>
       After any code change, create a New version and redeploy.
     </div>
     <div class="script-steps">
       <div class="script-step">Go to <strong>Extensions → Apps Script</strong> in your Google Sheet.</div>
-      <div class="script-step">Replace all code with the script below, then <strong>Save & Deploy</strong>.</div>
+      <div class="script-step">Replace all code with the script below, then <strong>Save &amp; Deploy</strong>.</div>
+      <div class="script-step">The script creates two sheets: <strong>Canopy</strong> and <strong>Outside</strong>, each with their own photo folder in Drive.</div>
     </div>
     <div class="code-block"><button class="copy-btn" onclick="copyScript()">Copy</button><span id="script-display"></span></div>
   </div>
+  
   <div class="settings-section">
     <div class="step-label">Local data</div>
     <div class="info-box warning">
@@ -463,6 +601,18 @@
   </div>
 </div>
 </main>
+
+<div class="modal-overlay" id="delete-modal" onclick="closeDeleteModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-icon">🗑</div>
+    <h3 class="modal-title">Delete this part?</h3>
+    <p class="modal-body" id="modal-part-info">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;margin:0" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" style="flex:1" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
 
 <div class="upload-overlay" id="upload-overlay">
   <div class="upload-box">
@@ -480,10 +630,16 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ══ CONSTANTS
-const A_COUNT = 14;        // i =1..14
-const B_LETTERS = ['a','b','c','d','e'];
-const B_COLS = 101;         // k = 0..100
+/* =========================================
+   APPLICATION CONSTANTS & CONFIG
+========================================= */
+const CANOPY_ZONES = ['A','B','C'];
+const CANOPY_POS_MAX = 10;  // ic ranges from 1 to 10
+const OUTSIDE_A_MAX = 14;   // i ranges from 1 to 14
+const OUTSIDE_B_LETTERS = ['a','b','c','d','e'];
+const OUTSIDE_B_COLS = 101; // k ranges from 0 to 100
+
+// Quality presets for image compression
 const QUALITY_PRESETS = {
   low:      { maxBytes: 100*1024, maxWidth: 1024, label:'Fast (~100 KB)' },
   mid:      { maxBytes: 300*1024, maxWidth: 1600, label:'Balanced (~300 KB)' },
@@ -491,40 +647,65 @@ const QUALITY_PRESETS = {
   original: { maxBytes: null,     maxWidth: null,  label:'Full (original)' },
 };
 
-// ══ STATE
+/* =========================================
+   APPLICATION STATE
+========================================= */
 let DB = [], pending = [], sheetsURL = '';
 let currentPhotoB64 = null;
 let lastResults = [], syncStatus = 'off';
-let currentZoneType = 'A';
 let pendingDeleteId = null, currentQuality = 'mid';
 
-// ══ INIT
-function init() {
-  // Populate selects
-  const aI = document.getElementById('zone-a-i');
-  for(let i=1;i<=14;i++) { const o=document.createElement('option'); o.value=i; o.textContent=i; aI.appendChild(o); }
-  const bK = document.getElementById('zone-b-k');
-  const zsK = document.getElementById('zs-b-k');
-  const zsI = document.getElementById('zs-a-i');
-  for(let k=0;k<=100;k+=5) {
-    let o=document.createElement('option'); o.value=k; o.textContent=k; bK.appendChild(o);
-    let o2=document.createElement('option'); o2.value=k; o2.textContent='Col '+k; zsK.appendChild(o2);
-  }
-  const oAll=document.createElement('option'); oAll.value=''; oAll.textContent='Toutes positions'; zsI.appendChild(oAll);
-  for(let i=1;i<=14;i++) { const o=document.createElement('option'); o.value=i; o.textContent='A'+i; zsI.appendChild(o); }
+// Form Location State
+let currentLoc = null;       // 'canopy', 'outside', or null
+let currentSubZone = null;   // 'A', 'B', 'C'
 
+// Search Filters State
+let currentLocFilter = 'all';
+
+/* =========================================
+   INITIALIZATION
+========================================= */
+function init() {
+  // Populate Canopy position dropdowns (ic = 1..10) for zones A, B, C
+  ['c-a-i','c-b-i','c-c-i'].forEach(id => {
+    const sel = document.getElementById(id);
+    for(let i=1;i<=CANOPY_POS_MAX;i++){const o=document.createElement('option');o.value=i;o.textContent=i;sel.appendChild(o);}
+  });
+  
+  // Populate Outside A dropdown (i = 1..14)
+  const oAI = document.getElementById('o-a-i');
+  for(let i=1;i<=OUTSIDE_A_MAX;i++){const o=document.createElement('option');o.value=i;o.textContent=i;oAI.appendChild(o);}
+  
+  // Populate Outside B columns dropdown (0..100, step 5)
+  const oBK = document.getElementById('o-b-k');
+  for(let k=0;k<=100;k+=5){const o=document.createElement('option');o.value=k;o.textContent=k;oBK.appendChild(o);}
+  
+  // Populate Search Zone position dropdown (reused for map search logic)
+  const zsK = document.getElementById('zs-b-k');
+  for(let k=0;k<=100;k+=5){const o=document.createElement('option');o.value=k;o.textContent='Col '+k;zsK.appendChild(o);}
+
+  // Load data from LocalStorage
   try { DB = JSON.parse(localStorage.getItem('pt_db')||'[]'); } catch { DB=[]; }
   try { pending = JSON.parse(localStorage.getItem('pt_pending')||'[]'); } catch { pending=[]; }
   sheetsURL = localStorage.getItem('pt_sheets_url')||'';
   currentQuality = localStorage.getItem('pt_quality')||'mid';
+  
+  // Apply saved settings to UI
   if(sheetsURL) document.getElementById('sheets-url').value = sheetsURL;
   setQuality(currentQuality, true);
-  updateCount(); updateSyncUI();
+  updateCount(); 
+  updateSyncUI();
+  
   if(sheetsURL) setSyncStatus('connected');
-  // Script display
+  
+  // Display the Google Apps Script code in the settings panel
   document.getElementById('script-display').textContent = GAS_SCRIPT;
+  setLocFilter('all', true);
 }
 
+/* =========================================
+   DATA PERSISTENCE & SETTINGS
+========================================= */
 function persist() { localStorage.setItem('pt_db', JSON.stringify(DB)); updateCount(); }
 function persistPending() { localStorage.setItem('pt_pending', JSON.stringify(pending)); updatePendingUI(); }
 function saveSettings() {
@@ -540,6 +721,8 @@ function updatePendingUI() {
   document.getElementById('pending-info').textContent = n > 0 ? `${n} part(s) saved locally, not yet synced.` : 'All parts are synced.';
 }
 function setSyncStatus(s) { syncStatus = s; updateSyncUI(); }
+
+// Update Header and Settings UI dots depending on sync status
 function updateSyncUI() {
   const dot = document.getElementById('header-sync-dot');
   const sDot = document.getElementById('settings-dot');
@@ -547,23 +730,24 @@ function updateSyncUI() {
   const sSub = document.getElementById('settings-status-sub');
   dot.className = 'sync-dot';
   const map = {
-    off:       {cls:'',          text:'Not connected',          sub:'Configure a Web App URL below.',      dc:'off'},
-    connected: {cls:'connected', text:'Google Sheets connected', sub:(sheetsURL||'').slice(0,48)+'…',         dc:'on'},
-    syncing:   {cls:'syncing',   text:'Syncing…',               sub:'Sending data to Google Sheets',        dc:'on'},
-    error:     {cls:'error',     text:'Sync error',             sub:'Check your Web App URL in Settings.',  dc:'err'},
+    off:       {cls:'',          text:'Not connected',         sub:'Configure a Web App URL below.',      dc:'off'},
+    connected: {cls:'connected', text:'Google Sheets connected', sub:(sheetsURL||'').slice(0,48)+'…',      dc:'on'},
+    syncing:   {cls:'syncing',   text:'Syncing…',              sub:'Sending data to Google Sheets',      dc:'on'},
+    error:     {cls:'error',     text:'Sync error',            sub:'Check your Web App URL in Settings.',dc:'err'},
   };
   const s = map[syncStatus]||map.off;
   if(s.cls) dot.classList.add(s.cls);
   sDot.className = 'dot '+s.dc;
   sText.textContent = s.text;
   sSub.textContent = sheetsURL ? s.sub : 'Configure a Web App URL below.';
+  
   const dDot = document.getElementById('drive-dot');
   const dText = document.getElementById('drive-status-text');
   if(sheetsURL){dDot.className='dot on';dText.textContent='Photos will upload to Google Drive';}
   else{dDot.className='dot off';dText.textContent='Photos stored locally only';}
 }
 
-// ══ QUALITY
+// Select Image Compression Quality
 function setQuality(q, silent) {
   currentQuality = q;
   localStorage.setItem('pt_quality', q);
@@ -571,7 +755,9 @@ function setQuality(q, silent) {
   if(!silent) showToast('📷 Quality: '+QUALITY_PRESETS[q].label);
 }
 
-// ══ TABS
+/* =========================================
+   UI TAB SWITCHING
+========================================= */
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) =>
     t.classList.toggle('active',(i===0&&tab==='record')||(i===1&&tab==='search')||(i===2&&tab==='settings')));
@@ -581,7 +767,6 @@ function switchTab(tab) {
   if(tab==='settings') updatePendingUI();
 }
 
-// ══ SEARCH SUB-TABS
 function switchSearchTab(sub) {
   document.getElementById('stab-parts').classList.toggle('active', sub==='parts');
   document.getElementById('stab-zone').classList.toggle('active', sub==='zone');
@@ -590,178 +775,344 @@ function switchSearchTab(sub) {
   if(sub==='zone'){buildZoneSVGs(); renderZoneResults();}
 }
 
-// ══ ZONE SELECTOR (Record)
-function selectZoneType(type) {
-  currentZoneType = type;
-  ['A','B','none'].forEach(t => document.getElementById('zone-btn-'+t).classList.toggle('active', t===type));
-  document.getElementById('zone-fields-A').classList.toggle('visible', type==='A');
-  document.getElementById('zone-fields-B').classList.toggle('visible', type==='B');
+/* =========================================
+   LOCATION SELECTOR LOGIC (Record Form)
+========================================= */
+function selectLocation(loc) {
+  currentLoc = loc;
+  currentSubZone = null;
+  // Update Level-1 toggles
+  ['canopy','outside'].forEach(l => {
+    const btn = document.getElementById('loc-btn-'+l);
+    btn.className = 'loc-btn';
+    if(l === loc) btn.classList.add('active-'+l);
+  });
+  // Toggle Level-2 sub-zone containers based on location
+  document.getElementById('subzone-wrap-canopy').classList.toggle('visible', loc==='canopy');
+  document.getElementById('subzone-wrap-outside').classList.toggle('visible', loc==='outside');
+  
+  // Reset child inputs when changing master location
+  hideAllPositionWraps();
+  clearSubZoneBtns('canopy');
+  clearSubZoneBtns('outside');
   updateZonePreview();
 }
-function updateZonePreview() {
-  const wrap = document.getElementById('zone-preview-wrap');
-  const z = getCurrentZoneValue();
-  document.getElementById('zone-preview-label').textContent = z||'—';
-  wrap.style.display = z ? 'block' : 'none';
+
+function clearSubZoneBtns(loc) {
+  const ids = loc==='canopy' ? ['csub-A','csub-B','csub-C'] : ['osub-A','osub-B'];
+  ids.forEach(id => document.getElementById(id).classList.remove('active'));
 }
+
+function hideAllPositionWraps() {
+  document.querySelectorAll('.position-wrap').forEach(el => el.classList.remove('visible'));
+}
+
+function selectSubZone(loc, zone) {
+  currentSubZone = zone;
+  clearSubZoneBtns(loc);
+  document.getElementById((loc==='canopy'?'csub-':'osub-')+zone).classList.add('active');
+  hideAllPositionWraps();
+  // Show specific input fields for the chosen sub-zone
+  const posId = 'pos-'+loc+'-'+zone;
+  const posEl = document.getElementById(posId);
+  if(posEl) posEl.classList.add('visible');
+  updateZonePreview();
+}
+
+// Resolves form values to build the single zone string (e.g. "A3", "Be15")
 function getCurrentZoneValue() {
-  if(currentZoneType==='A'){const i=document.getElementById('zone-a-i').value; return i!==''?`A${i}`:null;}
-  if(currentZoneType==='B'){const j=document.getElementById('zone-b-j').value,k=document.getElementById('zone-b-k').value; return(j&&k!=='')?`B${j}${k}`:null;}
+  if(!currentLoc) return null;
+  if(currentLoc==='canopy') {
+    if(!currentSubZone) return null;
+    let i;
+    if(currentSubZone==='A') i=document.getElementById('c-a-i').value;
+    if(currentSubZone==='B') i=document.getElementById('c-b-i').value;
+    if(currentSubZone==='C') i=document.getElementById('c-c-i').value;
+    return i ? currentSubZone+i : null;
+  }
+  if(currentLoc==='outside') {
+    if(!currentSubZone) return null;
+    if(currentSubZone==='A') {
+      const i=document.getElementById('o-a-i').value;
+      return i ? 'A'+i : null;
+    }
+    if(currentSubZone==='B') {
+      const j=document.getElementById('o-b-j').value;
+      const k=document.getElementById('o-b-k').value;
+      return (j&&k!=='') ? 'B'+j+k : null;
+    }
+  }
   return null;
 }
 
-// ══ ZONE SVGs
+// Shows the calculated zone string as a badge in the UI
+function updateZonePreview() {
+  const wrap = document.getElementById('zone-preview-wrap');
+  const z = getCurrentZoneValue();
+  const loc = currentLoc;
+  let label = '';
+  if(z && loc) {
+    const locLabel = loc==='canopy' ? '🏗 Canopy' : '🌿 Outside';
+    label = locLabel + ' — ' + z;
+  }
+  document.getElementById('zone-preview-label').textContent = label || '—';
+  wrap.style.display = label ? 'block' : 'none';
+}
+
+/* =========================================
+   SEARCH LOC FILTER
+========================================= */
+function setLocFilter(f, silent) {
+  currentLocFilter = f;
+  ['all','canopy','outside'].forEach(k => {
+    const btn = document.getElementById('lf-'+k);
+    btn.className = 'loc-filter-btn';
+    if(k===f) btn.classList.add('active-'+f);
+  });
+  if(!silent) runSearch();
+}
+
+/* =========================================
+   INTERACTIVE SVG ZONE MAPS
+========================================= */
 function buildZoneSVGs() {
-  buildSvgA();
-  buildSvgB();
+  buildSimpleLineSVG('svg-CA', 'canopy', 'A', CANOPY_POS_MAX);
+  buildSimpleLineSVG('svg-CB', 'canopy', 'B', CANOPY_POS_MAX);
+  buildSimpleLineSVG('svg-CC', 'canopy', 'C', CANOPY_POS_MAX);
+  buildSimpleLineSVG('svg-OA', 'outside', 'A', OUTSIDE_A_MAX);
+  buildGridSVG('svg-OB');
   colorZoneCells();
 }
 
-function buildSvgA() {
-  const svg = document.getElementById('svg-A');
-  const cellH=12, cellW=72, mL=26, mT=4;
+// Draws a vertical strip map (used for Canopy A/B/C, Outside A)
+function buildSimpleLineSVG(svgId, loc, subzone, count) {
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  const cellH=12, cellW=60, mL=22, mT=4;
   svg.setAttribute('width', mL+cellW+4);
-  svg.setAttribute('height', A_COUNT*cellH+mT*2);
+  svg.setAttribute('height', count*cellH+mT*2);
   svg.innerHTML='';
-  for(let i=0;i<A_COUNT;i++){
-    const y=mT+i*cellH;
-    const rect=makeSVGEl('rect',{x:mL,y,width:cellW,height:cellH,'class':'zone-cell','data-zone':'A'+i});
-    rect.addEventListener('click',()=>clickZoneCell('A'+i));
+  for(let i=1;i<=count;i++){
+    const y=mT+(i-1)*cellH;
+    const zoneKey = loc+'|'+subzone+'|'+i;  // Internal identifier
+    const rect=makeSVGEl('rect',{x:mL,y,width:cellW,height:cellH,'class':'zone-cell','data-zone':zoneKey});
+    rect.addEventListener('click',()=>clickZoneCell(zoneKey));
     svg.appendChild(rect);
     const txt=makeSVGEl('text',{x:mL-3,y:y+cellH*0.72,'text-anchor':'end','class':'zone-label'});
-    txt.textContent='A'+i;
-    svg.appendChild(txt);
+    txt.textContent=subzone+i; svg.appendChild(txt);
   }
 }
 
-function buildSvgB() {
-  const svg = document.getElementById('svg-B');
+// Draws a 2D grid map (used for Outside B)
+function buildGridSVG(svgId) {
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
   const wrap = svg.parentElement;
-  const avail = (wrap.offsetWidth||300)-2;
+  const avail=(wrap.offsetWidth||300)-2;
   const mL=18, mT=16;
-  const rawCW=(avail-mL)/B_COLS;
+  const rawCW=(avail-mL)/OUTSIDE_B_COLS;
   const cellW=Math.max(4,Math.floor(rawCW));
-  const cellH=Math.max(22,Math.floor(avail/(B_COLS*0.8)));
-  const W=mL+B_COLS*cellW;
-  const H=mT+B_LETTERS.length*cellH+8;
-  svg.setAttribute('width',W);
-  svg.setAttribute('height',H);
+  const cellH=Math.max(22,Math.floor(avail/(OUTSIDE_B_COLS*0.8)));
+  const W=mL+OUTSIDE_B_COLS*cellW;
+  const H=mT+OUTSIDE_B_LETTERS.length*cellH+8;
+  svg.setAttribute('width',W); svg.setAttribute('height',H);
   svg.innerHTML='';
-  // col headers every 5
-  for(let k=0;k<B_COLS;k+=5){
+  for(let k=0;k<OUTSIDE_B_COLS;k+=5){
     const txt=makeSVGEl('text',{x:mL+k*cellW+cellW/2,y:mT-4,'text-anchor':'middle','class':'zone-label'});
     txt.textContent=k; svg.appendChild(txt);
   }
-  B_LETTERS.forEach((j,ri)=>{
+  OUTSIDE_B_LETTERS.forEach((j,ri)=>{
     const rowTxt=makeSVGEl('text',{x:mL-3,y:mT+ri*cellH+cellH*0.65,'text-anchor':'end','class':'zone-label'});
     rowTxt.textContent=j; svg.appendChild(rowTxt);
-    for(let k=0;k<B_COLS;k++){
+    for(let k=0;k<OUTSIDE_B_COLS;k++){
       const x=mL+k*cellW, y=mT+ri*cellH;
-      const rect=makeSVGEl('rect',{x,y,width:cellW,height:cellH,'class':'zone-cell','data-zone':'B'+j+k});
-      rect.addEventListener('click',()=>clickZoneCell('B'+j+k));
+      const zoneKey='outside|B|'+j+k;
+      const rect=makeSVGEl('rect',{x,y,width:cellW,height:cellH,'class':'zone-cell','data-zone':zoneKey});
+      rect.addEventListener('click',()=>clickZoneCell(zoneKey));
       svg.appendChild(rect);
     }
   });
 }
 
+// Helper to create SVG elements with attributes
 function makeSVGEl(tag, attrs) {
   const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
   Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));
   return el;
 }
 
+// Parses stored zone strings back to SVG identifiers
+function zoneToSvgKey(loc, zone) {
+  if(!loc||!zone) return null;
+  if(loc==='canopy') {
+    const sub=zone[0]; const pos=zone.slice(1);
+    return loc+'|'+sub+'|'+pos;
+  }
+  if(loc==='outside') {
+    if(zone.startsWith('A')) return 'outside|A|'+zone.slice(1);
+    if(zone.startsWith('B')) return 'outside|B|'+zone.slice(1);
+  }
+  return null;
+}
+
+// Highlights specific SVG cells if they contain parts
 function colorZoneCells() {
   document.querySelectorAll('.zone-cell').forEach(c=>c.classList.remove('has-parts','selected-zone'));
   document.querySelectorAll('.zone-blue-dot').forEach(d=>d.remove());
-  const counts={};
-  DB.forEach(p=>{if(p.zone)counts[p.zone]=(counts[p.zone]||0)+1;});
-  Object.keys(counts).forEach(z=>{
-    const c=document.querySelector(`[data-zone="${z}"]`);
-    if(c)c.classList.add('has-parts');
+  DB.forEach(p=>{
+    const key=zoneToSvgKey(p.location, p.zone);
+    if(key){const c=document.querySelector(`[data-zone="${key}"]`);if(c)c.classList.add('has-parts');}
   });
 }
 
-function clickZoneCell(zone) {
-  // Place blue dot
-  placeBlueDot(zone);
-  // Sync filter selects
-  if(zone.startsWith('A')){
-    document.getElementById('zs-type').value='A'; onZoneFilterChange();
-    document.getElementById('zs-a-i').value=zone.slice(1);
-  } else {
-    document.getElementById('zs-type').value='B'; onZoneFilterChange();
-    document.getElementById('zs-b-j').value=zone[1];
-    document.getElementById('zs-b-k').value=zone.slice(2);
+// Map Click Handler: Translates an SVG click to form filters
+function clickZoneCell(zoneKey) {
+  placeBlueDot(zoneKey);
+  const [loc,sub,pos] = zoneKey.split('|');
+  document.getElementById('zs-loc').value=loc; onZoneFilterChange();
+  if(loc==='canopy') {
+    document.getElementById('zs-subtype').value=sub; onZoneSubTypeChange();
+    document.getElementById('zs-pos').value=pos;
+  } else if(loc==='outside' && sub==='A') {
+    document.getElementById('zs-subtype').value='A'; onZoneSubTypeChange();
+    document.getElementById('zs-pos').value=pos;
+  } else if(loc==='outside' && sub==='B') {
+    document.getElementById('zs-subtype').value='B'; onZoneSubTypeChange();
+    document.getElementById('zs-b-j').value=pos[0];
+    document.getElementById('zs-b-k').value=pos.slice(1);
   }
   renderZoneResults();
 }
 
-function placeBlueDot(zone) {
+// Draws the selection indicator on the map
+function placeBlueDot(zoneKey) {
   document.querySelectorAll('.zone-blue-dot').forEach(d=>d.remove());
   document.querySelectorAll('.zone-cell').forEach(c=>c.classList.remove('selected-zone'));
-  const cell=document.querySelector(`[data-zone="${zone}"]`);
+  const cell=document.querySelector(`[data-zone="${zoneKey}"]`);
   if(!cell) return;
   cell.classList.add('selected-zone');
   const x=parseFloat(cell.getAttribute('x'))+parseFloat(cell.getAttribute('width'))/2;
   const y=parseFloat(cell.getAttribute('y'))+parseFloat(cell.getAttribute('height'))/2;
   const svg=cell.closest('svg');
-  const r=zone.startsWith('A')?5:6;
+  const r=6;
   const dot=makeSVGEl('circle',{cx:x,cy:y,r,'class':'zone-blue-dot'});
   svg.appendChild(dot);
 }
 
-// ══ ZONE FILTER (Search)
+// Cascade dropdown filters when location changes in Search > Zone
 function onZoneFilterChange() {
-  const t=document.getElementById('zs-type').value;
-  const aW=document.getElementById('zs-a-wrap');
-  const bW=document.getElementById('zs-b-wrap');
-  const aI=document.getElementById('zs-a-i');
-  if(t==='A'){aW.style.display='block';aI.style.display='block';bW.style.display='none';}
-  else if(t==='B'){aW.style.display='none';aI.style.display='none';bW.style.display='grid';}
-  else{aW.style.display='none';bW.style.display='none';}
+  const loc=document.getElementById('zs-loc').value;
+  const stWrap=document.getElementById('zs-subtype-wrap');
+  const stSel=document.getElementById('zs-subtype');
+  const posWrap=document.getElementById('zs-pos-wrap');
+  const bWrap=document.getElementById('zs-b-wrap');
+  
+  posWrap.style.display='none'; bWrap.style.display='none';
+  stSel.innerHTML='';
+  
+  if(loc==='canopy') {
+    stWrap.style.display='block'; stSel.style.display='block';
+    ['','A','B','C'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v?'Zone '+v:'All sub-zones';stSel.appendChild(o);});
+  } else if(loc==='outside') {
+    stWrap.style.display='block'; stSel.style.display='block';
+    ['','A','B'].forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v?'Zone '+v:'All sub-zones';stSel.appendChild(o);});
+  } else {
+    stWrap.style.display='none'; stSel.style.display='none';
+  }
   renderZoneResults();
 }
 
+// Cascade dropdown filters when sub-zone changes
+function onZoneSubTypeChange() {
+  const loc=document.getElementById('zs-loc').value;
+  const sub=document.getElementById('zs-subtype').value;
+  const posWrap=document.getElementById('zs-pos-wrap');
+  const bWrap=document.getElementById('zs-b-wrap');
+  const posSel=document.getElementById('zs-pos');
+  
+  posWrap.style.display='none'; bWrap.style.display='none';
+  if(!sub) { renderZoneResults(); return; }
+  
+  if(loc==='canopy') {
+    posSel.innerHTML='<option value="">All positions</option>';
+    for(let i=1;i<=CANOPY_POS_MAX;i++){const o=document.createElement('option');o.value=i;o.textContent=sub+i;posSel.appendChild(o);}
+    posWrap.style.display='block';
+  } else if(loc==='outside' && sub==='A') {
+    posSel.innerHTML='<option value="">All positions</option>';
+    for(let i=1;i<=OUTSIDE_A_MAX;i++){const o=document.createElement('option');o.value=i;o.textContent='A'+i;posSel.appendChild(o);}
+    posWrap.style.display='block';
+  } else if(loc==='outside' && sub==='B') {
+    bWrap.style.display='grid';
+  }
+  renderZoneResults();
+}
+
+// Renders the list of parts mapped to the filtered zone parameters
 function renderZoneResults() {
   colorZoneCells();
-  const t=document.getElementById('zs-type').value;
+  const loc=document.getElementById('zs-loc').value;
+  const sub=(document.getElementById('zs-subtype').style.display!=='none')?document.getElementById('zs-subtype').value:'';
+  
   let filtered=DB.filter(p=>p.zone);
-  if(t==='A'){
-    filtered=filtered.filter(p=>p.zone&&p.zone.startsWith('A'));
-    const iv=document.getElementById('zs-a-i').value;
-    if(iv!=='') filtered=filtered.filter(p=>p.zone==='A'+iv);
-  } else if(t==='B'){
-    filtered=filtered.filter(p=>p.zone&&p.zone.startsWith('B'));
-    const jv=document.getElementById('zs-b-j').value;
-    const kv=document.getElementById('zs-b-k').value;
-    if(jv) filtered=filtered.filter(p=>p.zone[1]===jv);
-    if(kv!=='') filtered=filtered.filter(p=>p.zone.slice(2)===kv);
+  if(loc) filtered=filtered.filter(p=>p.location===loc);
+  if(sub) {
+    if(loc==='canopy') filtered=filtered.filter(p=>p.zone&&p.zone[0]===sub);
+    else if(loc==='outside') filtered=filtered.filter(p=>p.zone&&p.zone[0]===sub);
   }
+  
+  const posVal=document.getElementById('zs-pos').value;
+  if(posVal) {
+    if(loc==='canopy') filtered=filtered.filter(p=>p.zone&&p.zone.slice(1)===''+posVal);
+    else if(loc==='outside' && sub==='A') filtered=filtered.filter(p=>p.zone==='A'+posVal);
+  }
+  const jv=document.getElementById('zs-b-j').value;
+  const kv=document.getElementById('zs-b-k').value;
+  if(loc==='outside' && sub==='B') {
+    if(jv) filtered=filtered.filter(p=>p.zone&&p.zone[1]===jv);
+    if(kv!=='') filtered=filtered.filter(p=>p.zone&&p.zone.slice(2)===''+kv);
+  }
+  
   const container=document.getElementById('zone-results-container');
   if(!filtered.length){
-    container.innerHTML='<div class="empty-state"><div class="big-icon">📐</div><p>Aucune pièce pour cette zone.</p></div>';
+    container.innerHTML='<div class="empty-state"><div class="big-icon">📐</div><p>No parts for this zone.</p></div>';
     return;
   }
-  const byZone={};
-  filtered.forEach(p=>{if(!byZone[p.zone])byZone[p.zone]=[];byZone[p.zone].push(p);});
-  const zones=Object.keys(byZone).sort();
-  if(zones.length===1) placeBlueDot(zones[0]);
-  container.innerHTML=zones.map(z=>{
-    const parts=byZone[z];
+  
+  // Group parts by identical zone
+  const byGroup={};
+  filtered.forEach(p=>{
+    const key=(p.location||'?')+'|'+(p.zone||'?');
+    if(!byGroup[key])byGroup[key]=[];
+    byGroup[key].push(p);
+  });
+  
+  const keys=Object.keys(byGroup).sort();
+  if(keys.length===1){
+    const [l,z]=keys[0].split('|');
+    const svgKey=zoneToSvgKey(l,z);
+    if(svgKey) placeBlueDot(svgKey);
+  }
+  
+  container.innerHTML=keys.map(key=>{
+    const [l,z]=key.split('|');
+    const parts=byGroup[key];
+    const locTag=l==='canopy'?' Canopy':' Outside';
     return `<div class="zone-result-card">
       <div class="zone-result-header">
-        <div class="zone-badge" onclick="placeBlueDot('${z}')" title="Afficher sur le plan">📐 ${z}</div>
-        <div class="zone-count-badge">${parts.length} pièce${parts.length>1?'s':''}</div>
+        <div class="zone-badge" onclick="placeBlueDot('${escHtml(zoneToSvgKey(l,z)||'')}')" title="Show on map">${locTag} — ${escHtml(z)}</div>
+        <div class="zone-count-badge">${parts.length} part${parts.length>1?'s':''}</div>
       </div>
       <div class="zone-parts-list">
-        ${parts.map(p=>`<span class="zone-part-chip" onclick="jumpToPartSearch('${escHtml(p.piece)}','${escHtml(p.package)}')" title="Voir dans recherche pièce">🏗${escHtml(p.piece)} / 📦${escHtml(p.package)}</span>`).join('')}
+        ${parts.map(p=>`<span class="zone-part-chip" onclick="jumpToPartSearch('${escHtml(p.piece)}','${escHtml(p.package)}')" title="View in part search">🏗${escHtml(p.piece)} / 📦${escHtml(p.package)}</span>`).join('')}
       </div>
     </div>`;
   }).join('');
 }
 
-function escHtml(s){return(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');}
+// Utility to escape HTML characters avoiding XSS
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+// Quick action: switch back to the text search tab and run it
 function jumpToPartSearch(piece,pkg) {
   switchSearchTab('parts');
   document.getElementById('search-piece').value=piece;
@@ -769,8 +1120,11 @@ function jumpToPartSearch(piece,pkg) {
   runSearch();
 }
 
-// ══ PHOTO
+/* =========================================
+   PHOTO PROCESSING & COMPRESSION
+========================================= */
 function handlePhoto(e){const f=e.target.files[0];if(f)processFile(f);}
+
 async function processFile(file){
   const preset=QUALITY_PRESETS[currentQuality];
   const prog=document.getElementById('compress-progress');
@@ -778,38 +1132,48 @@ async function processFile(file){
   const pct=document.getElementById('compress-pct');
   prog.classList.add('active');
   fill.style.width='10%';pct.textContent='10%';
+  
   const orig=await readFileAsDataURL(file);
   const origBytes=Math.round(orig.length*3/4);
   document.getElementById('compress-original').textContent='Original: '+formatBytes(origBytes);
   fill.style.width='50%';pct.textContent='50%';
+  
   let finalB64,finalBytes;
   if(!preset.maxBytes){finalB64=orig;finalBytes=origBytes;}
   else{finalB64=await adaptiveCompress(orig,preset);finalBytes=Math.round(finalB64.length*3/4);}
   fill.style.width='90%';pct.textContent='90%';
   currentPhotoB64=finalB64;
+  
   const ratio=Math.round((1-finalBytes/origBytes)*100);
   const resEl=document.getElementById('compress-result');
   resEl.textContent='Result: '+formatBytes(finalBytes);
   resEl.className=finalBytes>(preset.maxBytes||Infinity)*1.1?'warn':'good';
   document.getElementById('compress-ratio').textContent='−'+ratio+'%';
   document.getElementById('photo-size-badge').textContent=formatBytes(finalBytes);
+  
   fill.style.width='100%';pct.textContent='100%';
   document.getElementById('preview-img').src=finalB64;
   document.getElementById('photo-zone').style.display='none';
   document.getElementById('photo-preview').style.display='block';
+  
   setTimeout(()=>prog.classList.remove('active'),1500);
   checkSaveReady();
 }
+
 function readFileAsDataURL(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=rej;r.readAsDataURL(f);});}
+
+// Compresses a Data URL to target maxBytes using canvas drawing and JPEG quality downscaling
 async function adaptiveCompress(dataURL,preset){
   return new Promise(resolve=>{
     const img=new Image();
     img.onload=()=>{
       const canvas=document.createElement('canvas');
       let w=img.width,h=img.height;
+      // Scale down dimensions if greater than maxWidth
       if(preset.maxWidth&&w>preset.maxWidth){const s=preset.maxWidth/w;w=Math.round(w*s);h=Math.round(h*s);}
       canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
+      // Try differing qualities to meet maxBytes limit
       const qs=[0.85,0.75,0.65,0.55,0.45,0.35,0.30];
       let best=null;
       for(const q of qs){const r=canvas.toDataURL('image/jpeg',q);best=r;if(Math.round(r.length*3/4)<=preset.maxBytes)break;}
@@ -818,7 +1182,9 @@ async function adaptiveCompress(dataURL,preset){
     img.src=dataURL;
   });
 }
+
 function formatBytes(b){if(b>=1024*1024)return(b/(1024*1024)).toFixed(1)+' MB';return Math.round(b/1024)+' KB';}
+
 function resetPhoto(){
   currentPhotoB64=null;
   document.getElementById('file-input').value='';
@@ -828,7 +1194,9 @@ function resetPhoto(){
   checkSaveReady();
 }
 
-// ══ SAVE
+/* =========================================
+   SAVE RECORD & TRIGGER UPLOAD
+========================================= */
 function checkSaveReady(){document.getElementById('save-btn').disabled=!currentPhotoB64;}
 ['input-piece','input-package','input-comment'].forEach(id=>document.getElementById(id).addEventListener('input',checkSaveReady));
 
@@ -837,162 +1205,305 @@ async function savePart(){
   const piece=document.getElementById('input-piece').value.trim();
   const pkg=document.getElementById('input-package').value.trim();
   const comment=document.getElementById('input-comment').value.trim();
+  
   if(!piece||!pkg){showToast('⚠️ Please fill in Piece ID and Package No.',true);return;}
+  
   const zone=getCurrentZoneValue()||'';
-  const part={id:Date.now(),date:new Date().toISOString(),piece,package:pkg,zone,comment,photo:currentPhotoB64,photoUrl:null,synced:false};
+  const location=currentLoc?currentLoc:'';
+  const part={id:Date.now(),date:new Date().toISOString(),piece,package:pkg,location,zone,comment,photo:currentPhotoB64,photoUrl:null,synced:false};
+  
+  // Push object to local store array and persist
   DB.push(part);persist();
+  
   if(sheetsURL){
     showUploadOverlay(true);setUploadStep('compress','done');setUploadStep('drive','active');
     const ok=await pushToSheets([part]);
-    if(ok){setUploadStep('drive','done');setUploadStep('sheets','done');setTimeout(()=>showUploadOverlay(false),800);showToast('✅ Part saved & synced to Google Sheets');}
-    else{setUploadStep('drive','error');setUploadStep('sheets','error');setTimeout(()=>showUploadOverlay(false),1200);pending.push(part);persistPending();showToast('💾 Saved locally — will sync when online');}
-  } else {pending.push(part);persistPending();showToast('💾 Saved locally (no Sheets URL configured)');}
+    if(ok){
+      setUploadStep('drive','done');setUploadStep('sheets','done');
+      setTimeout(()=>showUploadOverlay(false),800);
+      showToast('✅ Part saved & synced to Google Sheets');
+    } else {
+      setUploadStep('drive','error');setUploadStep('sheets','error');
+      setTimeout(()=>showUploadOverlay(false),1200);
+      pending.push(part);persistPending();
+      showToast('💾 Saved locally — will sync when online',true);
+    }
+  } else {
+    pending.push(part);persistPending();
+    showToast('💾 Saved locally (no Sheets URL configured)');
+  }
+  
+  // Reset form after saving
   resetPhoto();
   ['input-piece','input-package','input-comment'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('zone-a-i').value='';
-  document.getElementById('zone-b-j').value='';
-  document.getElementById('zone-b-k').value='';
+  selectLocation(null);
+  currentLoc=null; currentSubZone=null;
+  ['canopy','outside'].forEach(l=>document.getElementById('loc-btn-'+l).className='loc-btn');
+  ['subzone-wrap-canopy','subzone-wrap-outside'].forEach(id=>document.getElementById(id).classList.remove('visible'));
   document.getElementById('zone-preview-wrap').style.display='none';
 }
 
-// ══ UPLOAD OVERLAY
+/* =========================================
+   UI UPLOAD OVERLAY
+========================================= */
 function showUploadOverlay(s){document.getElementById('upload-overlay').classList.toggle('active',s);if(s){['compress','drive','sheets'].forEach(x=>setUploadStep(x,''));setUploadStep('compress','active');}}
 function setUploadStep(step,state){const el=document.getElementById('ustep-'+step);el.className='upload-step'+(state?' '+state:'');const ic={compress:'🗜',drive:'📁',sheets:'📊'};if(state==='done')el.querySelector('.us-icon').textContent='✅';if(state==='active')el.querySelector('.us-icon').textContent=ic[step]||'⏳';if(state==='error')el.querySelector('.us-icon').textContent='❌';}
 
-// ══ SHEETS SYNC
+/* =========================================
+   GOOGLE SHEETS FETCH LOGIC
+========================================= */
 async function pushToSheets(parts){
   if(!sheetsURL)return false;setSyncStatus('syncing');
   try{
-    const payload=parts.map(p=>({id:p.id,date:p.date,piece:p.piece,package:p.package,zone:p.zone||'',comment:p.comment,photoB64:p.photo?p.photo.split(',')[1]:null}));
+    const payload=parts.map(p=>({
+      id:p.id, date:p.date, piece:p.piece, package:p.package,
+      location:p.location||'', zone:p.zone||'', comment:p.comment,
+      // Pass base64 payload stripping the MIME type prefix
+      photoB64:p.photo?p.photo.split(',')[1]:null
+    }));
     await fetch(sheetsURL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
-    parts.forEach(p=>{const d=DB.find(x=>x.id===p.id);if(d)d.synced=true;});persist();setSyncStatus('connected');setUploadStep('sheets','done');return true;
+    
+    // Mark as synced locally
+    parts.forEach(p=>{const d=DB.find(x=>x.id===p.id);if(d)d.synced=true;});
+    persist();setSyncStatus('connected');setUploadStep('sheets','done');return true;
   }catch(err){console.error(err);setSyncStatus('error');return false;}
 }
-async function syncPending(){if(!pending.length){showToast('Nothing to sync');return;}if(!sheetsURL){showToast('⚠️ No Sheets URL configured — go to Settings',true);return;}const ok=await pushToSheets(pending);if(ok){const pids=new Set(pending.map(p=>p.id));DB.forEach(p=>{if(pids.has(p.id))p.synced=true;});persist();pending=[];persistPending();showToast('✅ '+pids.size+' part(s) synced to Google Sheets');}else{showToast('❌ Sync failed',true);}}
-async function testConnection(){if(!sheetsURL){showToast('⚠️ Enter a Web App URL first',true);return;}setSyncStatus('syncing');try{await fetch(sheetsURL+'?ping=1',{mode:'no-cors'});setSyncStatus('connected');showToast('✅ Connection successful!');}catch{setSyncStatus('error');showToast('❌ Connection failed',true);}}
-async function pullFromSheets(){if(!sheetsURL){showToast('⚠️ No Sheets URL',true);return;}setSyncStatus('syncing');const piece=document.getElementById('search-piece').value.trim();const pkg=document.getElementById('search-package').value.trim();try{const res=await fetch(sheetsURL+'?piece='+encodeURIComponent(piece)+'&package='+encodeURIComponent(pkg),{redirect:'follow'});const data=await res.json();setSyncStatus('connected');if(data.status==='ok'){renderSheetResults(data.rows);showToast('☁ '+data.rows.length+' result(s) from Google Sheets');}}catch(err){setSyncStatus('error');console.error(err);showToast('❌ Could not reach Google Sheets',true);}}
+
+async function syncPending(){
+  if(!pending.length){showToast('Nothing to sync');return;}
+  if(!sheetsURL){showToast('⚠️ No Sheets URL configured — go to Settings',true);return;}
+  const ok=await pushToSheets(pending);
+  if(ok){
+    const pids=new Set(pending.map(p=>p.id));
+    DB.forEach(p=>{if(pids.has(p.id))p.synced=true;});
+    persist();pending=[];persistPending();
+    showToast('✅ '+pids.size+' part(s) synced to Google Sheets');
+  }
+  else{showToast('❌ Sync failed',true);}
+}
+
+async function testConnection(){
+  if(!sheetsURL){showToast('⚠️ Enter a Web App URL first',true);return;}
+  setSyncStatus('syncing');
+  try{await fetch(sheetsURL+'?ping=1',{mode:'no-cors'});setSyncStatus('connected');showToast('✅ Connection successful!');}
+  catch{setSyncStatus('error');showToast('❌ Connection failed',true);}
+}
+
+async function pullFromSheets(){
+  if(!sheetsURL){showToast('⚠️ No Sheets URL',true);return;}
+  setSyncStatus('syncing');
+  const piece=document.getElementById('search-piece').value.trim();
+  const pkg=document.getElementById('search-package').value.trim();
+  try{
+    const res=await fetch(sheetsURL+'?piece='+encodeURIComponent(piece)+'&package='+encodeURIComponent(pkg),{redirect:'follow'});
+    const data=await res.json();
+    setSyncStatus('connected');
+    if(data.status==='ok'){renderSheetResults(data.rows);showToast('☁ '+data.rows.length+' result(s) from Google Sheets');}
+  }catch(err){setSyncStatus('error');console.error(err);showToast('❌ Could not reach Google Sheets',true);}
+}
 
 function renderSheetResults(rows){
   if(!rows.length){document.getElementById('results-count').textContent='0';document.getElementById('results-container').innerHTML='<div class="empty-state"><div class="big-icon">📭</div><p>No parts found in Google Sheets.</p></div>';return;}
   document.getElementById('results-count').textContent=rows.length;
   document.getElementById('results-container').innerHTML=rows.map(r=>{
-    const photoUrl=r['Photo URL'];const sizeKB=r['Photo Size KB'];const zone=r['Zone']||'';
-    return `<div class="result-card"><div class="result-img-wrap">${photoUrl&&photoUrl!=='upload-failed'?`<img src="${photoUrl}" loading="lazy">`:'<div class="no-img">☁ Photo on Drive</div>'}</div><div class="result-meta"><div class="result-ids"><span class="tag tag-piece">🏗 ${escHtml(r['Piece ID']||'—')}</span><span class="tag tag-pkg">📦 ${escHtml(r['Package No.']||'—')}</span>${zone?`<span class="tag tag-zone">📐 ${escHtml(zone)}</span>`:''}<span class="tag tag-synced">☁ Sheets</span></div><div class="result-date">🕐 ${r['Date']||''}${r['Comment']?' — '+r['Comment']:''}</div></div></div>`;
+    const photoUrl=r['Photo URL'];
+    const loc=(r['Location']||'').toLowerCase();
+    const zone=r['Zone']||'';
+    const locTag=loc==='canopy'?`<span class="tag tag-loc-canopy"> Canopy</span>`:loc==='outside'?`<span class="tag tag-loc-outside"> Outside</span>`:'';
+    return `<div class="result-card"><div class="result-img-wrap">${photoUrl&&photoUrl!=='upload-failed'?`<img src="${photoUrl}" loading="lazy">`:'<div class="no-img">☁ Photo on Drive</div>'}</div><div class="result-meta"><div class="result-ids"><span class="tag tag-piece">🏗 ${escHtml(r['Piece ID']||'—')}</span><span class="tag tag-pkg">📦 ${escHtml(r['Package No.']||'—')}</span>${locTag}${zone?`<span class="tag tag-zone">📐 ${escHtml(zone)}</span>`:''}<span class="tag tag-synced">☁ Sheets</span></div><div class="result-date">🕐 ${r['Date']||''}${r['Comment']?' — '+r['Comment']:''}</div></div></div>`;
   }).join('');
 }
 
-// ══ LOCAL SEARCH
+/* =========================================
+   LOCAL SEARCH
+========================================= */
 function runSearch(){
   const piece=document.getElementById('search-piece').value.trim().toLowerCase();
   const pkg=document.getElementById('search-package').value.trim().toLowerCase();
+  
   if(!piece&&!pkg){lastResults=[];document.getElementById('results-count').textContent='—';document.getElementById('results-container').innerHTML='<div class="empty-state"><div class="big-icon">🔎</div><p>Enter a Piece ID or Package number to search.</p></div>';return;}
-  lastResults=DB.filter(p=>(!piece||p.piece.toLowerCase().includes(piece))&&(!pkg||p.package.toLowerCase().includes(pkg)));
+  
+  lastResults=DB.filter(p=>{
+    const matchPiece=!piece||p.piece.toLowerCase().includes(piece);
+    const matchPkg=!pkg||p.package.toLowerCase().includes(pkg);
+    const matchLoc=currentLocFilter==='all'||p.location===currentLocFilter;
+    return matchPiece&&matchPkg&&matchLoc;
+  });
+  
   document.getElementById('results-count').textContent=lastResults.length;
   if(!lastResults.length){document.getElementById('results-container').innerHTML='<div class="empty-state"><div class="big-icon">📭</div><p>No parts found locally. Try "Refresh from Sheets".</p></div>';return;}
-  document.getElementById('results-container').innerHTML=lastResults.map((p,i)=>{
-    return `<div class="result-card" id="card-${p.id}"><div class="result-img-wrap">${p.photo?`<img src="${p.photo}" loading="lazy">`:'<div class="no-img">📷 No photo</div>'}</div><div class="result-meta"><div class="result-ids"><span class="tag tag-piece">🏗 ${escHtml(p.piece)}</span><span class="tag tag-pkg">📦 ${escHtml(p.package)}</span>${p.zone?`<span class="tag tag-zone">📐 ${escHtml(p.zone)}</span>`:''}<span class="tag ${p.synced?'tag-synced':'tag-local'}">${p.synced?'☁ Synced':'💾 Local'}</span></div><div class="result-date">🕐 ${new Date(p.date).toLocaleString('en-GB')}${p.comment?' — '+p.comment:''}</div><div class="result-actions"><button class="btn-card btn-card-del" onclick="askDelete(${p.id})">🗑 Delete</button></div></div></div>`;
+  
+  document.getElementById('results-container').innerHTML=lastResults.map(p=>{
+    const locTag=p.location==='canopy'?`<span class="tag tag-loc-canopy"> Canopy</span>`:p.location==='outside'?`<span class="tag tag-loc-outside"> Outside</span>`:'';
+    return `<div class="result-card" id="card-${p.id}"><div class="result-img-wrap">${p.photo?`<img src="${p.photo}" loading="lazy">`:'<div class="no-img">📷 No photo</div>'}</div><div class="result-meta"><div class="result-ids"><span class="tag tag-piece">🏗 ${escHtml(p.piece)}</span><span class="tag tag-pkg">📦 ${escHtml(p.package)}</span>${locTag}${p.zone?`<span class="tag tag-zone">📐 ${escHtml(p.zone)}</span>`:''}<span class="tag ${p.synced?'tag-synced':'tag-local'}">${p.synced?'☁ Synced':'💾 Local'}</span></div><div class="result-date">🕐 ${new Date(p.date).toLocaleString('en-GB')}${p.comment?' — '+p.comment:''}</div><div class="result-actions"><button class="btn-card btn-card-del" onclick="askDelete(${p.id})">🗑 Delete</button></div></div></div>`;
   }).join('');
 }
 
-// ══ DELETE
-function askDelete(id){const p=DB.find(x=>x.id===id);if(!p)return;pendingDeleteId=id;document.getElementById('modal-part-info').innerHTML=`Piece <strong>${escHtml(p.piece)}</strong> — Package <strong>${escHtml(p.package)}</strong>${p.zone?`<br>Zone <strong>${escHtml(p.zone)}</strong>`:''}<br><span style="font-size:11px;color:var(--text-muted)">${new Date(p.date).toLocaleString('en-GB')}</span><br><br>${p.synced?'<span style="color:var(--accent)">⚠ This part remains in Google Sheets and Drive.</span>':''}`;document.getElementById('delete-modal').classList.add('open');}
+/* =========================================
+   RECORD DELETION
+========================================= */
+function askDelete(id){const p=DB.find(x=>x.id===id);if(!p)return;pendingDeleteId=id;document.getElementById('modal-part-info').innerHTML=`Piece <strong>${escHtml(p.piece)}</strong> — Package <strong>${escHtml(p.package)}</strong>${p.location?`<br><span class="tag tag-loc-${p.location}" style="font-size:11px;">${p.location==='canopy'?' Canopy':' Outside'}</span>`:''}${p.zone?` Zone <strong>${escHtml(p.zone)}</strong>`:''}<br><span style="font-size:11px;color:var(--text-muted)">${new Date(p.date).toLocaleString('en-GB')}</span><br><br>${p.synced?'<span style="color:var(--accent)">⚠ This part remains in Google Sheets and Drive.</span>':''}`;document.getElementById('delete-modal').classList.add('open');}
 function closeDeleteModal(){document.getElementById('delete-modal').classList.remove('open');pendingDeleteId=null;}
 function confirmDelete(){if(pendingDeleteId===null)return;DB=DB.filter(p=>p.id!==pendingDeleteId);pending=pending.filter(p=>p.id!==pendingDeleteId);persist();persistPending();closeDeleteModal();showToast('🗑 Part deleted');runSearch();}
 
-// ══ EXPORT
+/* =========================================
+   EXCEL EXPORT LOGIC
+========================================= */
 function exportExcel(data){
-  const rows=(data||DB).map(p=>({'ID':p.id,'Date':new Date(p.date).toLocaleString('en-GB'),'Piece ID':p.piece,'Package No.':p.package,'Zone':p.zone||'','Comment':p.comment||'','Photo (Drive)':p.photoUrl||'','Synced':p.synced?'Yes':'No'}));
+  const rows=(data||DB).map(p=>({'ID':p.id,'Date':new Date(p.date).toLocaleString('en-GB'),'Location':p.location||'','Piece ID':p.piece,'Package No.':p.package,'Zone':p.zone||'','Comment':p.comment||'','Photo (Drive)':p.photoUrl||'','Synced':p.synced?'Yes':'No'}));
   const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:14},{wch:20},{wch:12},{wch:14},{wch:10},{wch:28},{wch:60},{wch:8}];
+  ws['!cols']=[{wch:14},{wch:20},{wch:10},{wch:12},{wch:14},{wch:10},{wch:28},{wch:60},{wch:8}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Parts');XLSX.writeFile(wb,'piece-track-'+new Date().toISOString().slice(0,10)+'.xlsx');
   showToast('⬇ Excel downloaded ('+(data||DB).length+' parts)');
 }
 function exportFiltered(){if(!lastResults.length){showToast('⚠️ No results to export',true);return;}exportExcel(lastResults);}
 
-// ══ LOCAL DATA
+/* =========================================
+   LOCAL DATA CLEARING
+========================================= */
 function clearLocalData(){if(!confirm('Clear ALL local data? This cannot be undone.\n\nMake sure your data is synced to Google Sheets first.'))return;DB=[];pending=[];persist();persistPending();showToast('🗑 Local data cleared');}
 
-// ══ SCRIPT
-const GAS_SCRIPT=`// PieceTrack v3 — Google Apps Script (with Zone)
-const SHEET_NAME = 'Parts';
-const DRIVE_FOLDER = 'PieceTrack';
+/* =========================================
+   GOOGLE APPS SCRIPT STRINGIFICATION
+========================================= */
+const GAS_SCRIPT=`// Copy the code — Google Apps Script (Canopy / Outside — separated into two sheets)
+const DRIVE_FOLDER_CANOPY  = 'PieceTrack/Canopy';
+const DRIVE_FOLDER_OUTSIDE = 'PieceTrack/Outside';
+const SHEET_CANOPY  = 'Canopy';
+const SHEET_OUTSIDE = 'Outside';
 const HEADERS = ['ID','Date','Piece ID','Package No.','Zone','Comment','Photo URL','Photo Size KB','Synced At'];
 
-function getOrCreateFolder() {
-  const folders = DriveApp.getFoldersByName(DRIVE_FOLDER);
-  return folders.hasNext() ? folders.next() : DriveApp.createFolder(DRIVE_FOLDER);
+// Iterates to create nested directories if they don't exist
+function getOrCreateFolder(path) {
+  const parts = path.split('/');
+  let folder = DriveApp.getRootFolder();
+  parts.forEach(name => {
+    const it = folder.getFoldersByName(name);
+    folder = it.hasNext() ? it.next() : folder.createFolder(name);
+  });
+  return folder;
 }
 
+// Ensure the sheets exist and writes their headers
+function getOrCreateSheet(ss, name) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.appendRow(HEADERS);
+    const hdr = sheet.getRange(1, 1, 1, HEADERS.length);
+    const color = name === SHEET_CANOPY ? '#9F7AEA' : '#ED8936';
+    hdr.setFontWeight('bold').setBackground(color).setFontColor('#FFFFFF');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// Entry point: Handles POST requests emitted by JS client
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const rows = Array.isArray(data) ? data : [data];
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(SHEET_NAME);
-    if (!sheet) {
-      sheet = ss.insertSheet(SHEET_NAME);
-      sheet.appendRow(HEADERS);
-      sheet.getRange(1,1,1,HEADERS.length).setFontWeight('bold').setBackground('#F6C90E');
-      sheet.setFrozenRows(1);
-    }
-    const folder = getOrCreateFolder();
     const results = [];
+
     rows.forEach(p => {
+      const loc = (p.location || '').toLowerCase();
+      const sheetName = loc === 'canopy' ? SHEET_CANOPY : SHEET_OUTSIDE;
+      const folderPath = loc === 'canopy' ? DRIVE_FOLDER_CANOPY : DRIVE_FOLDER_OUTSIDE;
+      const sheet = getOrCreateSheet(ss, sheetName);
+      const folder = getOrCreateFolder(folderPath);
+
       let photoUrl = '', photoSizeKB = '';
       if (p.photoB64) {
         try {
           const decoded = Utilities.base64Decode(p.photoB64);
-          const blob = Utilities.newBlob(decoded, 'image/jpeg', p.piece+'_'+p.package+'_'+p.id+'.jpg');
+          const filename = (p.piece || 'pc') + '_' + (p.package || 'pkg') + '_' + p.id + '.jpg';
+          const blob = Utilities.newBlob(decoded, 'image/jpeg', filename);
           const file = folder.createFile(blob);
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          photoUrl = 'https://drive.google.com/uc?id='+file.getId();
+          photoUrl = 'https://drive.google.com/uc?id=' + file.getId();
           photoSizeKB = Math.round(decoded.length / 1024);
         } catch(driveErr) { photoUrl = 'upload-failed'; }
       }
+
       sheet.appendRow([
-        p.id, p.date, p.piece, p.package, p.zone||'', p.comment||'',
+        p.id, p.date, p.piece, p.package,
+        p.zone || '', p.comment || '',
         photoUrl, photoSizeKB, new Date().toISOString()
       ]);
-      results.push({ id: p.id, photoUrl });
+      results.push({ id: p.id, photoUrl, sheet: sheetName });
     });
-    return ContentService.createTextOutput(JSON.stringify({status:'ok',count:rows.length,results})).setMimeType(ContentService.MimeType.JSON);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok', count: rows.length, results }))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({status:'error',message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
+// Entry point: Handles GET requests emitted by JS client (to refresh data)
 function doGet(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify({status:'ok',rows:[]})).setMimeType(ContentService.MimeType.JSON);
-  const [headers,...rows] = sheet.getDataRange().getValues();
-  const parts = rows.map(r => Object.fromEntries(headers.map((h,i)=>[h,r[i]])));
-  const piece = e.parameter.piece||'';
-  const pkg = e.parameter.package||'';
-  const zone = e.parameter.zone||'';
-  const filtered = parts.filter(p=>
-    (!piece||String(p['Piece ID']).toLowerCase().includes(piece.toLowerCase())) &&
-    (!pkg||String(p['Package No.']).toLowerCase().includes(pkg.toLowerCase())) &&
-    (!zone||String(p['Zone']).toLowerCase().includes(zone.toLowerCase()))
+  const piece   = e.parameter.piece   || '';
+  const pkg     = e.parameter.package || '';
+  const zone    = e.parameter.zone    || '';
+  const locReq  = (e.parameter.location || '').toLowerCase(); // 'canopy' | 'outside' | ''
+
+  const sheetNames = locReq === 'canopy'  ? [SHEET_CANOPY]
+                   : locReq === 'outside' ? [SHEET_OUTSIDE]
+                   : [SHEET_CANOPY, SHEET_OUTSIDE];
+
+  let allRows = [];
+  sheetNames.forEach(name => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) return;
+    const [headers, ...rows] = sheet.getDataRange().getValues();
+    const parts = rows.map(r => {
+      const obj = Object.fromEntries(headers.map((h, i) => [h, r[i]]));
+      obj._sheet = name;
+      return obj;
+    });
+    allRows = allRows.concat(parts);
+  });
+
+  // Apply filters server-side
+  const filtered = allRows.filter(p =>
+    (!piece || String(p['Piece ID']).toLowerCase().includes(piece.toLowerCase())) &&
+    (!pkg   || String(p['Package No.']).toLowerCase().includes(pkg.toLowerCase())) &&
+    (!zone  || String(p['Zone']).toLowerCase().includes(zone.toLowerCase()))
   );
-  return ContentService.createTextOutput(JSON.stringify({status:'ok',rows:filtered})).setMimeType(ContentService.MimeType.JSON);
-}`;
+
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok', rows: filtered }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+`;
 
 function copyScript(){navigator.clipboard.writeText(GAS_SCRIPT).then(()=>showToast('📋 Script copied to clipboard'));}
 
-// ══ TOAST
+/* =========================================
+   UI TOAST MESSAGES
+========================================= */
 function showToast(msg,isError=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(isError?' err':'');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);}
 
-// ══ DRAG & DROP
+/* =========================================
+   DRAG & DROP EVENTS (Photo Uploading)
+========================================= */
 const dzEl=document.getElementById('photo-zone');
 dzEl.addEventListener('dragover',e=>{e.preventDefault();dzEl.classList.add('drag-over');});
 dzEl.addEventListener('dragleave',()=>dzEl.classList.remove('drag-over'));
 dzEl.addEventListener('drop',e=>{e.preventDefault();dzEl.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processFile(f);});
 
-// ══ RESIZE handler for SVG B
-window.addEventListener('resize',()=>{if(document.getElementById('panel-search').classList.contains('active')&&document.getElementById('search-panel-zone').style.display==='block'){buildSvgB();colorZoneCells();}});
+/* =========================================
+   WINDOW RESIZE EVENTS (Responsive SVGs)
+========================================= */
+window.addEventListener('resize',()=>{if(document.getElementById('panel-search').classList.contains('active')&&document.getElementById('search-panel-zone').style.display==='block'){buildGridSVG('svg-OB');colorZoneCells();}});
 
+// Bootstrap application logic
 init();
 </script>
-</body> 
+</body>
 </html>
