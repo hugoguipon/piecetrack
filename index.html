@@ -558,7 +558,7 @@
     </div>
     <div class="field">
       <label>Google Apps Script Web App URL</label>
-      <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycbzIxACdC7ZDBcrbJ213d9w9-MlWt2j3HMo8016y4oSz0-V0mjC-YV9WevBY7r1DpWF3iw/exec" oninput="saveSettings()">
+      <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbxHWn_TPFqAtgG7bL8Bvit0R91j-PyHsCl5AmE1FcLSarNSPwWxIYYOtLDy5EnZN_3Zdg/exec" oninput="saveSettings()">
     </div>
     <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
   </div>
@@ -1261,12 +1261,29 @@ async function pushToSheets(parts){
       // Pass base64 payload stripping the MIME type prefix
       photoB64:p.photo?p.photo.split(',')[1]:null
     }));
-    await fetch(sheetsURL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain'}});
+    
+    // NOUVEAU CODE : Sans le no-cors, et on lit la réponse du serveur
+    const response = await fetch(sheetsURL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'error') {
+      throw new Error(result.message); // Déclenche l'erreur pour la voir dans la console
+    }
     
     // Mark as synced locally
     parts.forEach(p=>{const d=DB.find(x=>x.id===p.id);if(d)d.synced=true;});
     persist();setSyncStatus('connected');setUploadStep('sheets','done');return true;
-  }catch(err){console.error(err);setSyncStatus('error');return false;}
+  }catch(err){
+    console.error("ERREUR GOOGLE SCRIPT :", err);
+    setSyncStatus('error');
+    showToast('❌ Erreur de synchronisation : regardez la console (F12)', true);
+    return false;
+  }
 }
 
 async function syncPending(){
@@ -1285,35 +1302,18 @@ async function syncPending(){
 async function testConnection(){
   if(!sheetsURL){showToast('⚠️ Enter a Web App URL first',true);return;}
   setSyncStatus('syncing');
-  try{await fetch(sheetsURL+'?ping=1',{mode:'no-cors'});setSyncStatus('connected');showToast('✅ Connection successful!');}
-  catch{setSyncStatus('error');showToast('❌ Connection failed',true);}
-}
-
-async function pullFromSheets(){
-  if(!sheetsURL){showToast('⚠️ No Sheets URL',true);return;}
-  setSyncStatus('syncing');
-  const piece=document.getElementById('search-piece').value.trim();
-  const pkg=document.getElementById('search-package').value.trim();
   try{
-    const res=await fetch(sheetsURL+'?piece='+encodeURIComponent(piece)+'&package='+encodeURIComponent(pkg),{redirect:'follow'});
-    const data=await res.json();
+    // Retrait du no-cors ici aussi
+    await fetch(sheetsURL+'?ping=1');
     setSyncStatus('connected');
-    if(data.status==='ok'){renderSheetResults(data.rows);showToast('☁ '+data.rows.length+' result(s) from Google Sheets');}
-  }catch(err){setSyncStatus('error');console.error(err);showToast('❌ Could not reach Google Sheets',true);}
+    showToast('✅ Connection successful!');
+  }
+  catch(err){
+    console.error(err);
+    setSyncStatus('error');
+    showToast('❌ Connection failed',true);
+  }
 }
-
-function renderSheetResults(rows){
-  if(!rows.length){document.getElementById('results-count').textContent='0';document.getElementById('results-container').innerHTML='<div class="empty-state"><div class="big-icon">📭</div><p>No parts found in Google Sheets.</p></div>';return;}
-  document.getElementById('results-count').textContent=rows.length;
-  document.getElementById('results-container').innerHTML=rows.map(r=>{
-    const photoUrl=r['Photo URL'];
-    const loc=(r['Location']||'').toLowerCase();
-    const zone=r['Zone']||'';
-    const locTag=loc==='canopy'?`<span class="tag tag-loc-canopy"> Canopy</span>`:loc==='outside'?`<span class="tag tag-loc-outside"> Outside</span>`:'';
-    return `<div class="result-card"><div class="result-img-wrap">${photoUrl&&photoUrl!=='upload-failed'?`<img src="${photoUrl}" loading="lazy">`:'<div class="no-img">☁ Photo on Drive</div>'}</div><div class="result-meta"><div class="result-ids"><span class="tag tag-piece">🏗 ${escHtml(r['Piece ID']||'—')}</span><span class="tag tag-pkg">📦 ${escHtml(r['Package No.']||'—')}</span>${locTag}${zone?`<span class="tag tag-zone">📐 ${escHtml(zone)}</span>`:''}<span class="tag tag-synced">☁ Sheets</span></div><div class="result-date">🕐 ${r['Date']||''}${r['Comment']?' — '+r['Comment']:''}</div></div></div>`;
-  }).join('');
-}
-
 /* =========================================
    LOCAL SEARCH
 ========================================= */
