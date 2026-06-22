@@ -9,37 +9,32 @@
   h2 { color: #F6C90E; margin-bottom: 20px; }
   input { width: 100%; padding: 10px; background: #252B3B; border: 1px solid #2D3748; border-radius: 6px; color: #E2E8F0; font-family: monospace; font-size: 13px; box-sizing: border-box; margin-bottom: 12px; }
   button { width: 100%; padding: 12px; background: #F6C90E; color: #1A1F2E; border: none; border-radius: 6px; font-weight: 700; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
-  button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .result-box { background: #0d1117; border: 1px solid #2D3748; border-radius: 8px; padding: 16px; margin-top: 16px; min-height: 80px; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+  button.secondary { background: #252B3B; color: #718096; border: 1px solid #2D3748; }
+  .result-box { background: #0d1117; border: 1px solid #2D3748; border-radius: 8px; padding: 16px; margin-top: 16px; min-height: 80px; font-size: 12px; line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
   .ok   { color: #38A169; }
   .err  { color: #E53E3E; }
   .info { color: #4299E1; }
   .warn { color: #F6C90E; }
   label { font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
-  .step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; font-size: 13px; color: #718096; }
-  .step .num { background: #F6C90E; color: #1A1F2E; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0; }
+  .sep { border-top: 1px solid #2D3748; margin: 12px 0; }
 </style>
 </head>
 <body>
 
 <h2>🔧 PieceTrack — Diagnostic Sheets</h2>
 
-<div class="step"><div class="num">1</div><div>Colle ton URL Apps Script ci-dessous</div></div>
-<div>
-  <label>URL Google Apps Script Web App</label>
-  <input type="text" id="url" placeholder="https://script.google.com/macros/s/..." />
-</div>
+<label>URL Google Apps Script Web App</label>
+<input type="text" id="url" placeholder="https://script.google.com/macros/s/..." />
 
-<div class="step"><div class="num">2</div><div>Lance les tests dans l'ordre</div></div>
-
-<button onclick="testGet()">🔍 TEST 1 — Vérifier GET (lecture)</button>
-<button onclick="testPost()">📝 TEST 2 — Vérifier POST sans photo</button>
-<button onclick="testPostWithPhoto()">🖼 TEST 3 — Vérifier POST avec photo test</button>
-<button onclick="clearResult()" style="background:#252B3B;color:#718096;border:1px solid #2D3748;">🗑 Effacer les résultats</button>
+<button onclick="testGet()">🔍 TEST 1 — Lecture GET (vérifie la connexion)</button>
+<button onclick="testPost()">📝 TEST 2 — Écriture POST + vérification</button>
+<button onclick="clearResult()" class="secondary">🗑 Effacer</button>
 
 <div class="result-box" id="result">Les résultats apparaîtront ici…</div>
 
 <script>
+const TEST_ID = 'DIAG-' + Date.now();
+
 function getUrl() {
   const u = document.getElementById('url').value.trim();
   if (!u) { log('err', '⚠️ Colle d\'abord ton URL Apps Script !'); return null; }
@@ -57,133 +52,103 @@ function clearResult() {
   document.getElementById('result').innerHTML = '';
 }
 
-// ─── TEST 1 : GET ──────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── TEST 1 : GET ─────────────────────────────────────────
 async function testGet() {
   const url = getUrl(); if (!url) return;
   clearResult();
-  log('info', '▶ TEST 1 — Envoi GET vers Apps Script...');
+  log('info', '▶ TEST 1 — Envoi GET...');
   try {
     const res = await fetch(url + '?ping=1', { redirect: 'follow' });
-    log('info', `→ HTTP Status: ${res.status} ${res.statusText}`);
+    log('info', `→ HTTP Status: ${res.status}`);
     const text = await res.text();
-    log('info', `→ Réponse brute (200 premiers chars): ${text.substring(0, 200)}`);
+    log('info', `→ Réponse: ${text.substring(0, 300)}`);
     try {
       const json = JSON.parse(text);
       if (json.status === 'ok') {
-        log('ok', `✅ GET fonctionne ! Sheets accessible.`);
+        log('ok', `✅ GET fonctionne ! Connexion au sheet OK.`);
         log('ok', `   Lignes trouvées: ${json.rows ? json.rows.length : 0}`);
       } else {
-        log('err', `❌ Le script répond mais avec une erreur: ${json.message || JSON.stringify(json)}`);
+        log('err', `❌ Erreur script: ${json.message}`);
       }
     } catch {
-      log('warn', '⚠️ La réponse n\'est pas du JSON valide — vérifier le déploiement.');
+      log('warn', '⚠️ Réponse non-JSON — vérifier le déploiement.');
     }
   } catch (err) {
-    log('err', `❌ Erreur réseau: ${err.message}`);
-    log('warn', '   → Cause possible: CORS, URL incorrecte, ou déploiement non publié.');
+    log('err', `❌ Erreur: ${err.message}`);
   }
 }
 
-// ─── TEST 2 : POST sans photo ───────────────────────────────
+// ─── TEST 2 : POST + vérification via GET ─────────────────
 async function testPost() {
   const url = getUrl(); if (!url) return;
   clearResult();
-  log('info', '▶ TEST 2 — Envoi POST sans photo...');
-  
+
+  const testPiece = 'DIAG-TEST';
+  const testPkg   = 'PKG-DIAG';
+
+  log('info', '▶ TEST 2 — Envoi POST avec no-cors...');
+  log('info', `   piece="${testPiece}" package="${testPkg}" location="canopy"`);
+
   const payload = [{
     id: Date.now(),
     date: new Date().toISOString(),
-    piece: 'DIAG-001',
-    package: 'PKG-DIAG',
+    piece: testPiece,
+    package: testPkg,
     location: 'canopy',
     zone: 'A1',
-    comment: 'Test diagnostic — peut être supprimé',
+    comment: 'Ligne de diagnostic — peut être supprimée',
     photoB64: null
   }];
 
-  log('info', `→ Payload envoyé: ${JSON.stringify(payload).substring(0, 200)}`);
-
   try {
-    const res = await fetch(url, {
+    // POST en no-cors (obligatoire avec Apps Script)
+    await fetch(url, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify(payload),
       headers: { 'Content-Type': 'text/plain' }
-      // Pas de mode:'no-cors' pour pouvoir lire la réponse
     });
-    log('info', `→ HTTP Status: ${res.status} ${res.statusText}`);
-    const text = await res.text();
-    log('info', `→ Réponse brute: ${text.substring(0, 500)}`);
-    try {
-      const json = JSON.parse(text);
-      if (json.status === 'ok') {
-        log('ok', `✅ POST fonctionne ! ${json.count} ligne(s) écrite(s).`);
-        if (json.log) {
-          log('info', `→ Log serveur:`);
-          log('info', JSON.stringify(json.log, null, 2));
-        }
-        if (json.results) {
-          json.results.forEach(r => log('ok', `   📄 id:${r.id} → sheet:${r.sheet} | photo:${r.photoUrl || 'aucune'}`));
-        }
-      } else {
-        log('err', `❌ Erreur serveur: ${json.message}`);
-        if (json.log) log('warn', `→ Log: ${JSON.stringify(json.log, null, 2)}`);
-      }
-    } catch {
-      log('warn', '⚠️ Réponse non-JSON. Probablement une erreur de déploiement ou CORS.');
-      log('info', `Réponse complète: ${text}`);
-    }
+    log('ok', '✅ POST envoyé (no-cors — réponse non lisible, normal)');
   } catch (err) {
-    log('err', `❌ Erreur fetch: ${err.message}`);
-    if (err.message.includes('CORS') || err.message.includes('cors')) {
-      log('warn', '→ CORS bloqué — le script n\'est pas déployé en accès "Tout le monde".');
-    }
+    log('err', `❌ POST échoué: ${err.message}`);
+    return;
   }
-}
 
-// ─── TEST 3 : POST avec petite photo en base64 ─────────────
-async function testPostWithPhoto() {
-  const url = getUrl(); if (!url) return;
-  clearResult();
-  log('info', '▶ TEST 3 — Envoi POST avec photo test (1x1 pixel JPEG)...');
+  // Attendre 4 secondes que Apps Script traite la requête
+  log('info', '⏳ Attente 4 secondes que Apps Script traite...');
+  await sleep(4000);
 
-  // JPEG minimal 1x1 pixel rouge encodé en base64
-  const tinyJpeg = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=';
-
-  const payload = [{
-    id: Date.now(),
-    date: new Date().toISOString(),
-    piece: 'DIAG-PHOTO',
-    package: 'PKG-DIAG',
-    location: 'outside',
-    zone: 'A1',
-    comment: 'Test photo diagnostic',
-    photoB64: tinyJpeg
-  }];
-
+  // Vérifier via GET si la ligne est apparue dans le sheet
+  log('info', '🔍 Vérification via GET — cherche la ligne dans le sheet...');
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain' }
-    });
-    log('info', `→ HTTP Status: ${res.status}`);
+    const checkUrl = `${url}?piece=${encodeURIComponent(testPiece)}&package=${encodeURIComponent(testPkg)}`;
+    const res = await fetch(checkUrl, { redirect: 'follow' });
     const text = await res.text();
     const json = JSON.parse(text);
+
     if (json.status === 'ok') {
-      log('ok', `✅ POST avec photo fonctionne !`);
-      json.results?.forEach(r => {
-        if (r.photoUrl && r.photoUrl !== 'upload-failed') {
-          log('ok', `   📸 Photo uploadée: ${r.photoUrl}`);
-        } else {
-          log('warn', `   ⚠️ Photo: ${r.photoUrl}`);
-        }
-      });
+      const found = json.rows && json.rows.length > 0;
+      if (found) {
+        log('ok', `✅✅ SUCCÈS ! La ligne a bien été écrite dans le sheet !`);
+        log('ok', `   → ${json.rows.length} ligne(s) trouvée(s) avec piece="${testPiece}"`);
+        log('ok', `   → Sheet: ${json.rows[0]._sheet || '?'}`);
+        log('ok', `   → Zone: ${json.rows[0]['Zone'] || '?'}`);
+        log('info', '');
+        log('info', '🎉 Ton Apps Script fonctionne correctement !');
+        log('info', '   Tu peux supprimer la ligne DIAG-TEST dans le sheet.');
+      } else {
+        log('err', `❌ La ligne n'a PAS été écrite dans le sheet.`);
+        log('warn', `→ Le POST est parti mais Apps Script n'a rien écrit.`);
+        log('warn', `→ Vérifie les logs dans Apps Script → Exécutions.`);
+        log('warn', `→ L'ID dans getSpreadsheet() est-il correct ?`);
+      }
     } else {
-      log('err', `❌ Erreur: ${json.message}`);
-      if (json.log) log('warn', JSON.stringify(json.log, null, 2));
+      log('err', `❌ Erreur lors de la vérification: ${json.message}`);
     }
   } catch (err) {
-    log('err', `❌ ${err.message}`);
+    log('err', `❌ Vérification impossible: ${err.message}`);
   }
 }
 </script>
