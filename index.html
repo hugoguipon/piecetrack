@@ -558,7 +558,7 @@
     </div>
     <div class="field">
       <label>Google Apps Script Web App URL</label>
-      <input type="text" id="sheets-url" value="https://script.google.com/macros/s/AKfycbxHWn_TPFqAtgG7bL8Bvit0R91j-PyHsCl5AmE1FcLSarNSPwWxIYYOtLDy5EnZN_3Zdg/exec" oninput="saveSettings()">
+      <input type="text" id="sheets-url" Placeholder="https://script.google.com/macros/s/AKfycbx8RNjXO2FXDGQxyMsrZKgdvj2mK335ghThf_XiM2jPMwUqui5dg1iHeyUWtInaoO6EQQ/exec" oninput="saveSettings()">
     </div>
     <button class="btn btn-success" onclick="testConnection()">🔗 Test connection</button>
   </div>
@@ -1315,6 +1315,64 @@ async function testConnection(){
   }
 }
 /* =========================================
+   PULL DATA FROM GOOGLE SHEETS
+========================================= */
+async function pullFromSheets() {
+  if (!sheetsURL) {
+    showToast('⚠️ No Sheets URL configured — go to Settings', true);
+    return;
+  }
+  setSyncStatus('syncing');
+  showToast('☁ Fetching data from Google Sheets…');
+
+  try {
+    // Build URL with current search filters as params
+    const piece = document.getElementById('search-piece').value.trim();
+    const pkg   = document.getElementById('search-package').value.trim();
+    const loc   = currentLocFilter !== 'all' ? currentLocFilter : '';
+    const url   = sheetsURL
+      + '?piece=' + encodeURIComponent(piece)
+      + '&package=' + encodeURIComponent(pkg)
+      + '&location=' + encodeURIComponent(loc);
+
+    const response = await fetch(url);
+    const result   = await response.json();
+
+    if (result.status !== 'ok') throw new Error(result.message || 'Unknown error');
+
+    // Merge rows from Sheets into local DB (avoid duplicates by ID)
+    let added = 0;
+    result.rows.forEach(row => {
+      const id = row['ID'];
+      if (!DB.find(p => String(p.id) === String(id))) {
+        DB.push({
+          id:       id,
+          date:     row['Date']            || '',
+          piece:    row['Piece ID']        || '',
+          package:  row['Package No.']    || '',
+          location: (row['_sheet'] || '').toLowerCase(),
+          zone:     row['Zone']            || '',
+          comment:  row['Comment']         || '',
+          photo:    null,
+          photoUrl: row['Photo URL']       || '',
+          synced:   true
+        });
+        added++;
+      }
+    });
+
+    persist();
+    setSyncStatus('connected');
+    showToast('✅ ' + added + ' new part(s) imported from Google Sheets');
+    runSearch(); // Refresh the displayed results
+
+  } catch (err) {
+    console.error('pullFromSheets error:', err);
+    setSyncStatus('error');
+    showToast('❌ Refresh failed — check console (F12)', true);
+  }
+}
+/* =========================================
    LOCAL SEARCH
 ========================================= */
 function runSearch(){
@@ -1366,14 +1424,20 @@ function clearLocalData(){if(!confirm('Clear ALL local data? This cannot be undo
 /* =========================================
    GOOGLE APPS SCRIPT STRINGIFICATION
 ========================================= */
-const GAS_SCRIPT=`// Copy the code — Google Apps Script (Canopy / Outside — separated into two sheets)
+const GAS_SCRIPT=`
+// PieceTrack — Google Apps Script FINAL 
+
+
 const DRIVE_FOLDER_CANOPY  = 'PieceTrack/Canopy';
 const DRIVE_FOLDER_OUTSIDE = 'PieceTrack/Outside';
 const SHEET_CANOPY  = 'Canopy';
 const SHEET_OUTSIDE = 'Outside';
 const HEADERS = ['ID','Date','Piece ID','Package No.','Zone','Comment','Photo URL','Photo Size KB','Synced At'];
 
-// Iterates to create nested directories if they don't exist
+function getSpreadsheet() {
+  return SpreadsheetApp.openById('1wfmJWZ5zomig3ENgieEat_ryICNdOOWfQ_Zl-M8EkzE');
+}
+
 function getOrCreateFolder(path) {
   const parts = path.split('/');
   let folder = DriveApp.getRootFolder();
@@ -1384,7 +1448,6 @@ function getOrCreateFolder(path) {
   return folder;
 }
 
-// Ensure the sheets exist and writes their headers
 function getOrCreateSheet(ss, name) {
   let sheet = ss.getSheetByName(name);
   if (!sheet) {
@@ -1398,12 +1461,62 @@ function getOrCreateSheet(ss, name) {
   return sheet;
 }
 
-// Entry point: Handles POST requests emitted by JS client
+function doGet(e) {
+  try {
+    const ss = getSpreadsheet();
+    const params = (e && e.parameter) ? e.parameter : {};
+    const piece  = params.piece   || '';
+    const pkg    = params.package || '';
+    const zone   = params.zone    || '';
+    const locReq = (params.location || '').toLowerCase();
+
+    const sheetNames = locReq === 'canopy'  ? [SHEET_CANOPY]
+                     : locReq === 'outside' ? [SHEET_OUTSIDE]
+                     : [SHEET_CANOPY, SHEET_OUTSIDE];
+
+    let allRows = [];
+    sheetNames.forEach(name => {
+      const sheet = ss.getSheetByName(name);
+      if (!sheet) return;
+      const dataRange = sheet.getDataRange().getValues();
+      if (dataRange.length <= 1) return;
+      const [headers, ...rows] = dataRange;
+      const parts = rows.map(r => {
+        const obj = Object.fromEntries(headers.map((h, i) => [h, r[i]]));
+        obj._sheet = name;
+        return obj;
+      });
+      allRows = allRows.concat(parts);
+    });
+
+    const filtered = allRows.filter(p =>
+      (!piece || String(p['Piece ID']).toLowerCase().includes(piece.toLowerCase())) &&
+      (!pkg   || String(p['Package No.']).toLowerCase().includes(pkg.toLowerCase())) &&
+      (!zone  || String(p['Zone']).toLowerCase().includes(zone.toLowerCase()))
+    );
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok', rows: filtered }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'error', message: 'postData vide' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     const data = JSON.parse(e.postData.contents);
     const rows = Array.isArray(data) ? data : [data];
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const results = [];
 
     rows.forEach(p => {
@@ -1416,14 +1529,18 @@ function doPost(e) {
       let photoUrl = '', photoSizeKB = '';
       if (p.photoB64) {
         try {
-          const decoded = Utilities.base64Decode(p.photoB64);
+          let b64Data = p.photoB64;
+          if (b64Data.includes(',')) b64Data = b64Data.split(',')[1];
+          const decoded = Utilities.base64Decode(b64Data);
           const filename = (p.piece || 'pc') + '_' + (p.package || 'pkg') + '_' + p.id + '.jpg';
           const blob = Utilities.newBlob(decoded, 'image/jpeg', filename);
           const file = folder.createFile(blob);
-          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          photoUrl = 'https://drive.google.com/uc?id=' + file.getId();
-          photoSizeKB = Math.round(decoded.length / 1024);
-        } catch(driveErr) { photoUrl = 'upload-failed'; }
+        // On ne force plus le partage public pour éviter le blocage Workspace
+        photoUrl = file.getUrl(); 
+        photoSizeKB = Math.round(decoded.length / 1024);
+        } catch(driveErr) {
+          photoUrl = 'upload-failed: ' + driveErr.message;
+        }
       }
 
       sheet.appendRow([
@@ -1431,12 +1548,14 @@ function doPost(e) {
         p.zone || '', p.comment || '',
         photoUrl, photoSizeKB, new Date().toISOString()
       ]);
+
       results.push({ id: p.id, photoUrl, sheet: sheetName });
     });
 
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'ok', count: rows.length, results }))
       .setMimeType(ContentService.MimeType.JSON);
+
   } catch(err) {
     return ContentService
       .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
@@ -1444,41 +1563,35 @@ function doPost(e) {
   }
 }
 
-// Entry point: Handles GET requests emitted by JS client (to refresh data)
-function doGet(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const piece   = e.parameter.piece   || '';
-  const pkg     = e.parameter.package || '';
-  const zone    = e.parameter.zone    || '';
-  const locReq  = (e.parameter.location || '').toLowerCase(); // 'canopy' | 'outside' | ''
-
-  const sheetNames = locReq === 'canopy'  ? [SHEET_CANOPY]
-                   : locReq === 'outside' ? [SHEET_OUTSIDE]
-                   : [SHEET_CANOPY, SHEET_OUTSIDE];
-
-  let allRows = [];
-  sheetNames.forEach(name => {
-    const sheet = ss.getSheetByName(name);
-    if (!sheet) return;
-    const [headers, ...rows] = sheet.getDataRange().getValues();
-    const parts = rows.map(r => {
-      const obj = Object.fromEntries(headers.map((h, i) => [h, r[i]]));
-      obj._sheet = name;
-      return obj;
-    });
-    allRows = allRows.concat(parts);
-  });
-
-  // Apply filters server-side
-  const filtered = allRows.filter(p =>
-    (!piece || String(p['Piece ID']).toLowerCase().includes(piece.toLowerCase())) &&
-    (!pkg   || String(p['Package No.']).toLowerCase().includes(pkg.toLowerCase())) &&
-    (!zone  || String(p['Zone']).toLowerCase().includes(zone.toLowerCase()))
-  );
-
-  return ContentService
-    .createTextOutput(JSON.stringify({ status: 'ok', rows: filtered }))
-    .setMimeType(ContentService.MimeType.JSON);
+function testwriteCanopy() {
+  try {
+    const ss = getSpreadsheet();
+    console.log('✅ Sheet ouvert : ' + ss.getName());
+    const sheet = getOrCreateSheet(ss, SHEET_CANOPY);
+    console.log('✅  Canopy OK — ' + sheet.getLastRow() + ' lignes');
+    sheet.appendRow(['TEST', new Date().toISOString(), 'DIAG', 'PKG-DIAG', 'A1', 'test diagnostic']);
+    console.log('✅  LIGNE WRITE ! CHECK sheet.');
+  } catch(err) {
+    console.log('❌ ERROR : ' + err.toString());
+  }
+}
+function testwriteOutside() {
+  try {
+    const ss = getSpreadsheet();
+    console.log('✅ Sheet ouvert : ' + ss.getName());
+    const sheet = getOrCreateSheet(ss, SHEET_OUTSIDE);
+    console.log('✅  Outside OK — ' + sheet.getLastRow() + ' lignes');
+    sheet.appendRow(['TEST', new Date().toISOString(), 'DIAG', 'PKG-DIAG', 'A1', 'test diagnostic']);
+    console.log('✅ LIGNE WRITE ! CHECK sheet.');
+  } catch(err) {
+    console.log('❌ ERROR : ' + err.toString());
+  }
+}
+function testDriveAuthComplet() {
+  var dossierRacine = DriveApp.getRootFolder();
+  var dossierTest = dossierRacine.createFolder("Test_PieceTrack_Suppression");
+  dossierTest.setTrashed(true); 
+  console.log("✅ Success/ CHECK DRIVE !");
 }
 `;
 
